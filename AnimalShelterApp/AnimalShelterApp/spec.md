@@ -27,8 +27,8 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 ### Step 4: Connect Blazor to Firebase
 - [x] In the Firebase Console, go to Project Settings and add a new "Web app".
 - [x] Copy the `firebaseConfig` object. You will need these keys.
-- [ ] Store these keys securely in your Blazor app's `wwwroot/appsettings.json` for local development and use environment-specific files (e.g., `appsettings.Development.json`) for different environments.
-- [ ] Add NuGet packages to your Blazor project to interact with Firebase. A good starting point is a community-maintained library that wraps the Firebase REST APIs for .NET.
+- [x] Store these keys securely in your Blazor app's `wwwroot/appsettings.json` for local development and use environment-specific files (e.g., `appsettings.Development.json`) for different environments.
+- [x] Add NuGet packages to your Blazor project to interact with Firebase. A good starting point is a community-maintained library that wraps the Firebase REST APIs for .NET.
 
 ### Step 5: Version Control
 - [x] Initialize a Git repository for your project.
