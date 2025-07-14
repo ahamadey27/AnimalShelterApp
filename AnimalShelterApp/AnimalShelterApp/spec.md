@@ -40,8 +40,8 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 
 ### Step 1: Define C# Data Models
 - [x] Create a `Shared` folder or project for your C# classes that will represent your Firestore documents. These will be used by your Blazor app.
-- [ ] `Shelter.cs`: Id, Name, Address
-- [ ] `UserProfile.cs`: Uid, Email, DisplayName, ShelterId
+- [x] `Shelter.cs`: Id, Name, Address
+- [x] `UserProfile.cs`: Uid, Email, DisplayName, ShelterId
 - [ ] `Animal.cs`: Id, Name, Species, Breed, DateOfBirth, PhotoUrl, IsActive
 - [ ] `Medication.cs`: Id, Name, DefaultDosage, Instructions
 - [ ] `ScheduledDose.cs`: Id, AnimalId, MedicationId, Dosage, TimeOfDay (e.g., "08:00"), Notes
