@@ -9,14 +9,14 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 ### Step 1: Environment Setup
 - [x] Ensure you have the latest .NET SDK installed.
 - [x] Install Visual Studio 2022 (or your preferred IDE like VS Code with C# extensions).
-- [ ] Install the Firebase CLI (Command Line Interface) for later deployment.
+- [x] Install the Firebase CLI (Command Line Interface) for later deployment.
 
 ### Step 2: Firebase Project Creation
-- [ ] Go to the Firebase Console and create a new project.
-- [ ] In your new project, navigate to the "Build" section.
-- [ ] Enable Firestore Database. Start in test mode for now (we'll add security rules later).
-- [ ] Enable Authentication. For the MVP, enable the "Email/Password" sign-in provider.
-- [ ] Enable Storage to handle pet photo uploads.
+- [x] Go to the Firebase Console and create a new project.
+- [x] In your new project, navigate to the "Build" section.
+- [x] Enable Firestore Database. Start in test mode for now (we'll add security rules later).
+- [x] Enable Authentication. For the MVP, enable the "Email/Password" sign-in provider.
+- [x] Enable Storage to handle pet photo uploads.
 
 ### Step 3: Blazor Project Initialization
 - [x] In Visual Studio or using the command line, create a new Blazor WebAssembly App.
@@ -25,8 +25,8 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] Configure it as a Progressive Web App (PWA). This is a crucial setting that allows users to "install" the app to their device's home screen.
 
 ### Step 4: Connect Blazor to Firebase
-- [ ] In the Firebase Console, go to Project Settings and add a new "Web app".
-- [ ] Copy the `firebaseConfig` object. You will need these keys.
+- [x] In the Firebase Console, go to Project Settings and add a new "Web app".
+- [x] Copy the `firebaseConfig` object. You will need these keys.
 - [ ] Store these keys securely in your Blazor app's `wwwroot/appsettings.json` for local development and use environment-specific files (e.g., `appsettings.Development.json`) for different environments.
 - [ ] Add NuGet packages to your Blazor project to interact with Firebase. A good starting point is a community-maintained library that wraps the Firebase REST APIs for .NET.
 
