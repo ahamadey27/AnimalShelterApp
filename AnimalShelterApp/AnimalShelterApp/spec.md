@@ -1,14 +1,14 @@
 ﻿# Project Roadmap: Pet Medication Tracker
 
 ## Tech Stack: Blazor WebAssembly (Frontend) & Google Firebase (Backend)
-This roadmap breaks the project into five distinct phases, each with actionable steps. The goal is to build a robust Minimum Viable Product (MVP) efficiently, test it with real users, and prepare for a successful launch.
+This roadmap breaks the project into six distinct phases, each with actionable steps. The goal is to build a robust Minimum Viable Product (MVP) efficiently, test it with real users, and prepare for a successful launch.
 
 ## Phase 1: Foundation & Setup (Estimated Time: 1-2 Days)
 **Goal:** Establish a solid foundation for the project by setting up the development environment, creating the necessary cloud services, and structuring the initial codebase.
 
 ### Step 1: Environment Setup
-- [ ] Ensure you have the latest .NET SDK installed.
-- [ ] Install Visual Studio 2022 (or your preferred IDE like VS Code with C# extensions).
+- [x] Ensure you have the latest .NET SDK installed.
+- [x] Install Visual Studio 2022 (or your preferred IDE like VS Code with C# extensions).
 - [ ] Install the Firebase CLI (Command Line Interface) for later deployment.
 
 ### Step 2: Firebase Project Creation
@@ -19,21 +19,21 @@ This roadmap breaks the project into five distinct phases, each with actionable 
 - [ ] Enable Storage to handle pet photo uploads.
 
 ### Step 3: Blazor Project Initialization
-- [ ] In Visual Studio or using the command line, create a new Blazor WebAssembly App.
-- [ ] Do not select the "ASP.NET Core Hosted" option, as Firebase will be our host and backend.
-- [ ] Choose ".NET 8.0" or newer.
-- [ ] Configure it as a Progressive Web App (PWA). This is a crucial setting that allows users to "install" the app to their device's home screen.
+- [x] In Visual Studio or using the command line, create a new Blazor WebAssembly App.
+- [x] Do not select the "ASP.NET Core Hosted" option, as Firebase will be our host and backend.
+- [x] Choose ".NET 9.0" or newer.
+- [x] Configure it as a Progressive Web App (PWA). This is a crucial setting that allows users to "install" the app to their device's home screen.
 
 ### Step 4: Connect Blazor to Firebase
 - [ ] In the Firebase Console, go to Project Settings and add a new "Web app".
 - [ ] Copy the `firebaseConfig` object. You will need these keys.
-- [ ] Store these keys securely in your Blazor app's `wwwroot/appsettings.json` file.
+- [ ] Store these keys securely in your Blazor app's `wwwroot/appsettings.json` for local development and use environment-specific files (e.g., `appsettings.Development.json`) for different environments.
 - [ ] Add NuGet packages to your Blazor project to interact with Firebase. A good starting point is a community-maintained library that wraps the Firebase REST APIs for .NET.
 
 ### Step 5: Version Control
-- [ ] Initialize a Git repository for your project.
-- [ ] Create an initial commit with your new project structure.
-- [ ] Push the repository to a service like GitHub or Azure DevOps.
+- [x] Initialize a Git repository for your project.
+- [x] Create an initial commit with your new project structure.
+- [x] Push the repository to a service like GitHub or Azure DevOps.
 
 ## Phase 2: Data Modeling & Security (Estimated Time: 2-3 Days)
 **Goal:** Define the application's data structure and implement the security rules to protect user data.
@@ -93,7 +93,34 @@ This roadmap breaks the project into five distinct phases, each with actionable 
 - [ ] Display the results in a clean table.
 - [ ] Implement a "Download as CSV" button. You can use a library like `CsvHelper` to easily generate the file in C#.
 
-## Phase 4: Refinement & Deployment (Estimated Time: 1 Week)
+### Step 6: Global Error Handling
+- [ ] Implement a global exception handler in your Blazor app.
+- [ ] Create a user-friendly error boundary to prevent the app from crashing.
+- [ ] Consider logging errors to a service (or a Firestore collection) to help with debugging.
+
+## Phase 4: Testing & Quality Assurance (Estimated Time: 1 Week)
+**Goal:** Ensure the application is reliable, bug-free, and works as expected through various levels of testing.
+
+### Step 1: Unit Testing
+- [ ] Set up a new xUnit or MSTest project in your solution.
+- [ ] Write unit tests for any business logic in your services, such as the `AuthService`.
+- [ ] Write unit tests for the CSV generation logic in the reporting feature to ensure data is formatted correctly.
+- [ ] Test any complex data transformations or validation logic.
+
+### Step 2: Automated End-to-End (E2E) Testing
+- [ ] Set up a new Playwright test project to automate browser testing.
+- [ ] Write E2E tests for the most critical user workflows:
+    - [ ] User sign-up, login, and logout.
+    - [ ] Creating, viewing, updating, and deleting an animal.
+    - [ ] Scheduling a new medication for an animal.
+    - [ ] Logging a dose from the main dashboard and verifying it moves to "Completed".
+
+### Step 3: User Acceptance Testing (UAT)
+- [ ] Perform end-to-end testing of every feature from a user's perspective.
+- [ ] Crucially, role-play as a stressed, non-tech-savvy shelter worker. Is it truly easy? Can you log a medication in under 10 seconds?
+- [ ] Fix any bugs or confusing workflows you discover.
+
+## Phase 5: Refinement & Deployment (Estimated Time: 1 Week)
 **Goal:** Polish the application, test it thoroughly, and deploy it for the first users.
 
 ### Step 1: Mobile-First UI/UX Polish
@@ -101,17 +128,12 @@ This roadmap breaks the project into five distinct phases, each with actionable 
 - [ ] Use a simple UI framework like Bootstrap (default in Blazor) or Tailwind CSS to ensure responsiveness.
 - [ ] Simplify wording, enlarge buttons, and remove any non-essential visual clutter.
 
-### Step 2: User Acceptance Testing (UAT)
-- [ ] Perform end-to-end testing of every feature.
-- [ ] Crucially, role-play as a stressed, non-tech-savvy shelter worker. Is it truly easy? Can you log a medication in under 10 seconds?
-- [ ] Fix any bugs or confusing workflows you discover.
-
-### Step 3: Deployment to Firebase Hosting
+### Step 2: Deployment to Firebase Hosting
 - [ ] Build your Blazor app in Release configuration.
 - [ ] Use the Firebase CLI to deploy. The command is typically `firebase deploy --only hosting`.
 - [ ] This will upload your application's static files (from the `wwwroot` folder) to Firebase's global CDN.
 
-## Phase 5: Launch & Feedback Loop (Ongoing)
+## Phase 6: Launch & Feedback Loop (Ongoing)
 **Goal:** Onboard your first users, gather critical feedback, and plan the future of the product.
 
 ### Step 1: First Customer Strategy
@@ -126,6 +148,11 @@ This roadmap breaks the project into five distinct phases, each with actionable 
 - [ ] Prioritize the feedback you receive. The first few weeks of real-world use will be invaluable.
 - [ ] Plan for small, frequent updates to address user pain points quickly.
 
-### Step 4: Plan for Monetization
+### Step 4: Legal & Compliance
+- [ ] Create a Privacy Policy that clearly explains what data you collect and how it's used.
+- [ ] Create a Terms of Service document for users to agree to.
+- [ ] Add links to these documents in the app's footer.
+
+### Step 5: Plan for Monetization
 - [ ] Once the product is stable and validated by your initial users, you can confidently implement the planned pricing model (Free for 5 animals, then $19/month).
 - [ ] This will involve integrating a payment provider like Stripe.

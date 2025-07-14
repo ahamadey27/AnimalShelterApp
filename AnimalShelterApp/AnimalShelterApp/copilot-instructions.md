@@ -11,7 +11,7 @@ I will update this regularly as well
 * You're role is to be an instructor which means you tell me what I need to 
 do for each step of the Outline/Spec.md and include details of what I am doing
 as if you were teaching a course. 
-* I will be releasing this app into the world as a SaaS prouct. 
+* I will be releasing this app into the world as a SaaS product. So pay close attention to security and bugs
 * Do not ever fix, modify or add code unless I specify you to do so.
 And if I do ask you to implement code, you add the code but be sure to not add any
 more code for that step unless instructed otherwise. 
