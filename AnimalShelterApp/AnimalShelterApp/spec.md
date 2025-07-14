@@ -42,10 +42,10 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] Create a `Shared` folder or project for your C# classes that will represent your Firestore documents. These will be used by your Blazor app.
 - [x] `Shelter.cs`: Id, Name, Address
 - [x] `UserProfile.cs`: Uid, Email, DisplayName, ShelterId
-- [ ] `Animal.cs`: Id, Name, Species, Breed, DateOfBirth, PhotoUrl, IsActive
-- [ ] `Medication.cs`: Id, Name, DefaultDosage, Instructions
-- [ ] `ScheduledDose.cs`: Id, AnimalId, MedicationId, Dosage, TimeOfDay (e.g., "08:00"), Notes
-- [ ] `DoseLog.cs`: Id, ScheduledDoseId, AnimalId, MedicationName, Dosage, TimeAdministered (Timestamp), AdministeredByUid, WasGiven (bool)
+- [x] `Animal.cs`: Id, Name, Species, Breed, DateOfBirth, PhotoUrl, IsActive
+- [x] `Medication.cs`: Id, Name, DefaultDosage, Instructions
+- [x] `ScheduledDose.cs`: Id, AnimalId, MedicationId, Dosage, TimeOfDay (e.g., "08:00"), Notes
+- [x] `DoseLog.cs`: Id, ScheduledDoseId, AnimalId, MedicationName, Dosage, TimeAdministered (Timestamp), AdministeredByUid, WasGiven (bool)
 
 ### Step 2: Design Firestore Collection Structure
 - [ ] Plan how your C# models map to Firestore. A good, scalable structure is:
