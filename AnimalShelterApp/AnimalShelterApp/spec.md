@@ -39,7 +39,7 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 **Goal:** Define the application's data structure and implement the security rules to protect user data.
 
 ### Step 1: Define C# Data Models
-- [ ] Create a `Shared` folder or project for your C# classes that will represent your Firestore documents. These will be used by your Blazor app.
+- [x] Create a `Shared` folder or project for your C# classes that will represent your Firestore documents. These will be used by your Blazor app.
 - [ ] `Shelter.cs`: Id, Name, Address
 - [ ] `UserProfile.cs`: Uid, Email, DisplayName, ShelterId
 - [ ] `Animal.cs`: Id, Name, Species, Breed, DateOfBirth, PhotoUrl, IsActive
