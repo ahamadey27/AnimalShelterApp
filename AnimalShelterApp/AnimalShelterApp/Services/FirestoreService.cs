@@ -81,10 +81,13 @@ namespace AnimalShelterApp.Services
         {
             try
             {
-                var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/users/{userProfile.Uid}";
+                // Creating a parent-document structure for users collection
+                var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/users";
                 
+                // Setting document ID in the request body instead of the URL
                 var content = new
                 {
+                    name = $"projects/{_projectId}/databases/(default)/documents/users/{userProfile.Uid}",
                     fields = new
                     {
                         email = new { stringValue = userProfile.Email },
@@ -149,19 +152,19 @@ namespace AnimalShelterApp.Services
                     
                     return new UserProfile
                     {
-                        Uid = fields.GetProperty("uid").GetProperty("stringValue").GetString(),
-                        Email = fields.GetProperty("email").GetProperty("stringValue").GetString(),
-                        DisplayName = fields.GetProperty("displayName").GetProperty("stringValue").GetString(),
-                        ShelterId = fields.GetProperty("shelterId").GetProperty("stringValue").GetString()
+                        Uid = fields.GetProperty("uid").GetProperty("stringValue").GetString() ?? string.Empty,
+                        Email = fields.GetProperty("email").GetProperty("stringValue").GetString() ?? string.Empty,
+                        DisplayName = fields.GetProperty("displayName").GetProperty("stringValue").GetString() ?? string.Empty,
+                        ShelterId = fields.GetProperty("shelterId").GetProperty("stringValue").GetString() ?? string.Empty
                     };
                 }
                 
-                return null;
+                return new UserProfile();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error getting user profile: {ex.Message}");
-                return null;
+                return new UserProfile();
             }
         }
 
