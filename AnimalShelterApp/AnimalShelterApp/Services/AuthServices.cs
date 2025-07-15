@@ -20,10 +20,10 @@ namespace AnimalShelterApp.Services
         private readonly FirestoreService _firestoreService;
         
         // User data that persists throughout the session
-        private UserProfile _currentUser;
-        private string _token;
+        private UserProfile? _currentUser;
+        private string? _token;
         
-        public event Action OnAuthStateChanged;
+        public event Action? OnAuthStateChanged;
 
         public AuthService(HttpClient httpClient, IConfiguration configuration, FirestoreService firestoreService)
         {
@@ -36,12 +36,12 @@ namespace AnimalShelterApp.Services
         /// <summary>
         /// Gets the currently authenticated user
         /// </summary>
-        public UserProfile CurrentUser => _currentUser;
+        public UserProfile? CurrentUser => _currentUser;
 
         /// <summary>
         /// Gets the authentication token for the current user
         /// </summary>
-        public string Token => _token;
+        public string? Token => _token;
 
         /// <summary>
         /// Login with email and password
@@ -162,7 +162,20 @@ namespace AnimalShelterApp.Services
                 else
                 {
                     var error = await response.Content.ReadFromJsonAsync<JsonElement>();
-                    Console.WriteLine($"Registration failed: {error}");
+                    
+                    // Log more detailed error information
+                    string errorMessage = "Unknown error";
+                    if (error.TryGetProperty("error", out JsonElement errorDetails))
+                    {
+                        if (errorDetails.TryGetProperty("message", out JsonElement message))
+                        {
+                            errorMessage = message.GetString() ?? "Unknown error";
+                        }
+                    }
+                    
+                    Console.WriteLine($"Registration failed: {errorMessage}");
+                    Console.WriteLine($"Full error details: {error}");
+                    
                     return false;
                 }
             }

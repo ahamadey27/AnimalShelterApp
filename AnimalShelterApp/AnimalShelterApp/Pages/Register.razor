@@ -131,11 +131,10 @@
             {
                 // Navigate to dashboard on successful registration
                 NavigationManager.NavigateTo("/");
-            }
-            else
-            {
-                errorMessage = "Registration failed. This email may already be in use.";
-            }
+            }                else
+                {
+                    errorMessage = $"Registration failed. {ex.Message}";
+                }
         }
         catch (Exception ex)
         {

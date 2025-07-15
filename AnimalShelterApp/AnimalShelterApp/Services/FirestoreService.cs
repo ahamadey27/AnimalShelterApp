@@ -53,7 +53,19 @@ namespace AnimalShelterApp.Services
                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
                 
                 var response = await _httpClient.SendAsync(request);
-                return response.IsSuccessStatusCode;
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    return true;
+                }
+                else
+                {
+                    // Log the detailed error
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"HTTP Error: {(int)response.StatusCode} {response.StatusCode}");
+                    Console.WriteLine($"Error response: {errorContent}");
+                    return false;
+                }
             }
             catch (Exception ex)
             {
@@ -91,7 +103,19 @@ namespace AnimalShelterApp.Services
                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
                 
                 var response = await _httpClient.SendAsync(request);
-                return response.IsSuccessStatusCode;
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    return true;
+                }
+                else
+                {
+                    // Log the detailed error
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"HTTP Error: {(int)response.StatusCode} {response.StatusCode}");
+                    Console.WriteLine($"Error response: {errorContent}");
+                    return false;
+                }
             }
             catch (Exception ex)
             {

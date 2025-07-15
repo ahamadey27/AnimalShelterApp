@@ -66,9 +66,9 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 **Goal:** Implement the core features that deliver value to the user.
 
 ### Step 1: Authentication & User Onboarding
-- [ ] Build Login, Logout, and Sign-Up pages.
-- [ ] On sign-up, create a new `Shelter` document and a `UserProfile` document, linking the user to their new shelter.
-- [ ] Create a central `AuthService` in C# to manage user state across the app.
+- [x] Build Login, Logout, and Sign-Up pages.
+- [x] On sign-up, create a new `Shelter` document and a `UserProfile` document, linking the user to their new shelter.
+- [x] Create a central `AuthService` in C# to manage user state across the app.
 
 ### Step 2: Animal Management (CRUD)
 - [ ] Create a page to display a list of all animals in the user's shelter.
