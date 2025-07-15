@@ -48,13 +48,13 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] `DoseLog.cs`: Id, ScheduledDoseId, AnimalId, MedicationName, Dosage, TimeAdministered (Timestamp), AdministeredByUid, WasGiven (bool)
 
 ### Step 2: Design Firestore Collection Structure
-- [ ] Plan how your C# models map to Firestore. A good, scalable structure is:
-- [ ] `/shelters/{shelterId}` - Top-level collection for each organization.
-- [ ] `/users/{userId}` - Stores user profile info, linking them to a shelter.
-- [ ] `/shelters/{shelterId}/animals/{animalId}` - Sub-collection of animals for a specific shelter.
-- [ ] `/shelters/{shelterId}/medications/{medicationId}` - Sub-collection of custom medications.
-- [ ] `/shelters/{shelterId}/schedule/{scheduleId}` - All scheduled doses for that shelter.
-- [ ] `/shelters/{shelterId}/logs/{logId}` - All dose administration logs for that shelter.
+- [x] Plan how your C# models map to Firestore. A good, scalable structure is:
+- [x] `/shelters/{shelterId}` - Top-level collection for each organization.
+- [x] `/users/{userId}` - Stores user profile info, linking them to a shelter.
+- [x] `/shelters/{shelterId}/animals/{animalId}` - Sub-collection of animals for a specific shelter.
+- [x] `/shelters/{shelterId}/medications/{medicationId}` - Sub-collection of custom medications.
+- [x] `/shelters/{shelterId}/schedule/{scheduleId}` - All scheduled doses for that shelter.
+- [x] `/shelters/{shelterId}/logs/{logId}` - All dose administration logs for that shelter.
 
 ### Step 3: Implement Firebase Security Rules
 - [ ] In the Firebase Console, go to Firestore -> Rules.
