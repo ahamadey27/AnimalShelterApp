@@ -17,13 +17,13 @@ namespace AnimalShelterApp.Services
     {
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
-        private readonly string _projectId;
+        private readonly string _projectId = string.Empty;
         
         public FirestoreService(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient;
             _configuration = configuration;
-            _projectId = _configuration["Firebase:projectId"];
+            _projectId = _configuration["Firebase:projectId"] ?? string.Empty;
         }
         
         /// <summary>
@@ -81,13 +81,12 @@ namespace AnimalShelterApp.Services
         {
             try
             {
-                // Creating a parent-document structure for users collection
-                var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/users";
+                // Creating a document with a specific ID using the documentId query parameter
+                var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/users?documentId={userProfile.Uid}";
                 
-                // Setting document ID in the request body instead of the URL
+                // Removing the name field and just specifying fields
                 var content = new
                 {
-                    name = $"projects/{_projectId}/databases/(default)/documents/users/{userProfile.Uid}",
                     fields = new
                     {
                         email = new { stringValue = userProfile.Email },
