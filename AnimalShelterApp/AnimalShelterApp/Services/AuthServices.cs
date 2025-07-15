@@ -17,6 +17,7 @@ namespace AnimalShelterApp.Services
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
         private readonly IConfiguration _configuration;
+        private readonly FirestoreService _firestoreService;
         
         // User data that persists throughout the session
         private UserProfile _currentUser;
@@ -24,10 +25,11 @@ namespace AnimalShelterApp.Services
         
         public event Action OnAuthStateChanged;
 
-        public AuthService(HttpClient httpClient, IConfiguration configuration)
+        public AuthService(HttpClient httpClient, IConfiguration configuration, FirestoreService firestoreService)
         {
             _httpClient = httpClient;
             _configuration = configuration;
+            _firestoreService = firestoreService;
             _apiKey = _configuration["Firebase:apiKey"];
         }
 
@@ -71,12 +73,12 @@ namespace AnimalShelterApp.Services
                     _token = idToken;
                     
                     // Get the user profile from Firestore
-                    await GetUserProfileAsync(uid);
+                    _currentUser = await _firestoreService.GetUserProfileAsync(uid, _token);
                     
                     // Notify subscribers that auth state has changed
                     OnAuthStateChanged?.Invoke();
                     
-                    return true;
+                    return _currentUser != null;
                 }
                 else
                 {
@@ -127,8 +129,13 @@ namespace AnimalShelterApp.Services
                         Address = shelterAddress
                     };
                     
-                    // TODO: Add the shelter to Firestore
-                    // (In Phase 3, we'll create a FirestoreService to handle this)
+                    // Add the shelter to Firestore
+                    var shelterCreated = await _firestoreService.CreateShelterAsync(newShelter, _token);
+                    
+                    if (!shelterCreated)
+                    {
+                        return false;
+                    }
                     
                     // Create a user profile
                     _currentUser = new UserProfile
@@ -139,8 +146,13 @@ namespace AnimalShelterApp.Services
                         ShelterId = newShelter.Id
                     };
                     
-                    // TODO: Add the user profile to Firestore
-                    // (In Phase 3, we'll create a FirestoreService to handle this)
+                    // Add the user profile to Firestore
+                    var profileCreated = await _firestoreService.CreateUserProfileAsync(_currentUser, _token);
+                    
+                    if (!profileCreated)
+                    {
+                        return false;
+                    }
                     
                     // Notify subscribers that auth state has changed
                     OnAuthStateChanged?.Invoke();
@@ -159,22 +171,6 @@ namespace AnimalShelterApp.Services
                 Console.WriteLine($"Registration exception: {ex.Message}");
                 return false;
             }
-        }
-        
-        /// <summary>
-        /// Fetch the user profile from Firestore using the user ID
-        /// </summary>
-        private async Task GetUserProfileAsync(string uid)
-        {
-            // TODO: Replace with actual Firestore data fetching
-            // For now, we'll just create a placeholder user
-            _currentUser = new UserProfile
-            {
-                Uid = uid,
-                Email = "placeholder@example.com",
-                DisplayName = "Placeholder User",
-                ShelterId = "placeholder-shelter-id"
-            };
         }
 
         /// <summary>

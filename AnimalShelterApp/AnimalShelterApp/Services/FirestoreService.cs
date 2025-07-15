@@ -18,20 +18,18 @@ namespace AnimalShelterApp.Services
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
         private readonly string _projectId;
-        private readonly AuthService _authService;
         
-        public FirestoreService(HttpClient httpClient, IConfiguration configuration, AuthService authService)
+        public FirestoreService(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient;
             _configuration = configuration;
-            _authService = authService;
             _projectId = _configuration["Firebase:projectId"];
         }
         
         /// <summary>
         /// Creates a new shelter document in Firestore
         /// </summary>
-        public async Task<bool> CreateShelterAsync(Shelter shelter)
+        public async Task<bool> CreateShelterAsync(Shelter shelter, string authToken)
         {
             try
             {
@@ -52,7 +50,7 @@ namespace AnimalShelterApp.Services
                 };
                 
                 // Add auth token
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _authService.Token);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
                 
                 var response = await _httpClient.SendAsync(request);
                 return response.IsSuccessStatusCode;
@@ -67,7 +65,7 @@ namespace AnimalShelterApp.Services
         /// <summary>
         /// Creates a new user profile document in Firestore
         /// </summary>
-        public async Task<bool> CreateUserProfileAsync(UserProfile userProfile)
+        public async Task<bool> CreateUserProfileAsync(UserProfile userProfile, string authToken)
         {
             try
             {
@@ -90,7 +88,7 @@ namespace AnimalShelterApp.Services
                 };
                 
                 // Add auth token
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _authService.Token);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
                 
                 var response = await _httpClient.SendAsync(request);
                 return response.IsSuccessStatusCode;
@@ -105,7 +103,7 @@ namespace AnimalShelterApp.Services
         /// <summary>
         /// Gets a user profile from Firestore by user ID
         /// </summary>
-        public async Task<UserProfile> GetUserProfileAsync(string uid)
+        public async Task<UserProfile> GetUserProfileAsync(string uid, string authToken)
         {
             try
             {
@@ -114,7 +112,7 @@ namespace AnimalShelterApp.Services
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 
                 // Add auth token
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _authService.Token);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
                 
                 var response = await _httpClient.SendAsync(request);
                 
@@ -139,46 +137,6 @@ namespace AnimalShelterApp.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"Error getting user profile: {ex.Message}");
-                return null;
-            }
-        }
-        
-        /// <summary>
-        /// Gets a shelter document from Firestore by shelter ID
-        /// </summary>
-        public async Task<Shelter> GetShelterAsync(string shelterId)
-        {
-            try
-            {
-                var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}";
-                
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
-                
-                // Add auth token
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _authService.Token);
-                
-                var response = await _httpClient.SendAsync(request);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    var content = await response.Content.ReadFromJsonAsync<JsonElement>();
-                    
-                    // Parse the Firestore document
-                    var fields = content.GetProperty("fields");
-                    
-                    return new Shelter
-                    {
-                        Id = shelterId,
-                        Name = fields.GetProperty("name").GetProperty("stringValue").GetString(),
-                        Address = fields.GetProperty("address").GetProperty("stringValue").GetString()
-                    };
-                }
-                
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error getting shelter: {ex.Message}");
                 return null;
             }
         }

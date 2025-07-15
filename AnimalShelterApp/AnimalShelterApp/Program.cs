@@ -1,6 +1,8 @@
 using AnimalShelterApp;
+using AnimalShelterApp.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using System.ComponentModel.DataAnnotations;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
