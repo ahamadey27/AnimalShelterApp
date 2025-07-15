@@ -1,0 +1,165 @@
+@page "/animals/details/{AnimalId}"
+@using AnimalShelterApp.Services
+@using AnimalShelterApp.Shared
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@inject FirestoreService FirestoreService
+
+<h3>Animal Details</h3>
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else if (animal == null)
+{
+    <div class="alert alert-warning">
+        Animal not found or you don't have permission to view it.
+    </div>
+    <button class="btn btn-secondary" @onclick="NavigateToList">Back to List</button>
+}
+else
+{
+    <div class="card mb-4">
+        <div class="row g-0">
+            <div class="col-md-4">
+                @if (!string.IsNullOrEmpty(animal.PhotoUrl))
+                {
+                    <img src="@animal.PhotoUrl" class="img-fluid rounded-start animal-photo" alt="@animal.Name">
+                }
+                else
+                {
+                    <div class="d-flex justify-content-center align-items-center bg-light animal-photo-placeholder">
+                        <span class="oi oi-image text-muted" style="font-size: 5rem;"></span>
+                    </div>
+                }
+            </div>
+            <div class="col-md-8">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">@animal.Name</h4>
+                    <div class="row mb-2">
+                        <div class="col-md-3 text-muted">Status:</div>
+                        <div class="col-md-9">
+                            @if (animal.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactive</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-3 text-muted">Species:</div>
+                        <div class="col-md-9">@animal.Species</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-3 text-muted">Breed:</div>
+                        <div class="col-md-9">@animal.Breed</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-3 text-muted">Age:</div>
+                        <div class="col-md-9">@GetAnimalAge(animal)</div>
+                    </div>
+                    @if (animal.DateOfBirth.HasValue)
+                    {
+                        <div class="row mb-2">
+                            <div class="col-md-3 text-muted">Date of Birth:</div>
+                            <div class="col-md-9">@animal.DateOfBirth.Value.ToString("MMM d, yyyy")</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="d-flex justify-content-between">
+        <button class="btn btn-secondary" @onclick="NavigateToList">Back to List</button>
+        <button class="btn btn-primary" @onclick="() => NavigateToEdit(animal.Id)">Edit</button>
+    </div>
+}
+
+<style>
+    .animal-photo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .animal-photo-placeholder {
+        height: 100%;
+        min-height: 300px;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string AnimalId { get; set; } = null!;
+    
+    private Animal? animal;
+    private bool isLoading = true;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        // Check if the user is authenticated
+        if (AuthService.CurrentUser == null)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+        
+        await LoadAnimalAsync();
+    }
+    
+    private async Task LoadAnimalAsync()
+    {
+        try
+        {
+            string shelterId = AuthService.CurrentUser!.ShelterId;
+            
+            // Fetch the animal from Firestore
+            animal = await FirestoreService.GetAnimalAsync(shelterId, AnimalId, AuthService.Token!);
+            
+            isLoading = false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading animal: {ex.Message}");
+            isLoading = false;
+        }
+    }
+    
+    private string GetAnimalAge(Animal animal)
+    {
+        if (!animal.DateOfBirth.HasValue)
+        {
+            return "Unknown";
+        }
+        
+        var today = DateTime.Today;
+        var age = today.Year - animal.DateOfBirth.Value.Year;
+        
+        // Adjust for the month/day if birthday hasn't occurred yet this year
+        if (animal.DateOfBirth.Value.Date > today.AddYears(-age))
+        {
+            age--;
+        }
+        
+        return $"{age} year{(age == 1 ? "" : "s")}";
+    }
+    
+    private void NavigateToList()
+    {
+        NavigationManager.NavigateTo("/animals");
+    }
+    
+    private void NavigateToEdit(string id)
+    {
+        NavigationManager.NavigateTo($"/animals/edit/{id}");
+    }
+}

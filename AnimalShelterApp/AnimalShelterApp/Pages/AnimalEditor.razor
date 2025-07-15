@@ -1,0 +1,308 @@
+@page "/animals/add"
+@page "/animals/edit/{AnimalId}"
+@using AnimalShelterApp.Services
+@using AnimalShelterApp.Shared
+@using System.IO
+@using System.Text.Json
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@inject FirestoreService FirestoreService
+@inject IJSRuntime JSRuntime
+
+<h3>@(IsEditMode ? "Edit Animal" : "Add New Animal")</h3>
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <EditForm Model="@animal" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="photoUpload" class="form-label">Photo</label>
+                    <div class="card">
+                        <div class="image-upload-container">
+                            @if (!string.IsNullOrEmpty(animal.PhotoUrl))
+                            {
+                                <img src="@animal.PhotoUrl" class="card-img-top upload-preview" alt="Animal Photo">
+                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" 
+                                        @onclick="RemovePhoto">
+                                    <span class="oi oi-x"></span>
+                                </button>
+                            }
+                            else
+                            {
+                                <div class="upload-placeholder d-flex flex-column justify-content-center align-items-center">
+                                    <span class="oi oi-image text-muted mb-2" style="font-size: 3rem;"></span>
+                                    <span>Click to upload photo</span>
+                                </div>
+                            }
+                            <InputFile id="photoUpload" OnChange="HandlePhotoSelected" class="photo-input" accept=".jpg,.jpeg,.png" />
+                        </div>
+                    </div>
+                    @if (uploadError != null)
+                    {
+                        <div class="text-danger mt-1">@uploadError</div>
+                    }
+                </div>
+            </div>
+            
+            <div class="col-md-8">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name</label>
+                    <InputText id="name" @bind-Value="animal.Name" class="form-control" placeholder="Enter animal name" />
+                    <ValidationMessage For="@(() => animal.Name)" />
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col">
+                        <label for="species" class="form-label">Species</label>
+                        <InputText id="species" @bind-Value="animal.Species" class="form-control" placeholder="Dog, Cat, etc." />
+                        <ValidationMessage For="@(() => animal.Species)" />
+                    </div>
+                    <div class="col">
+                        <label for="breed" class="form-label">Breed</label>
+                        <InputText id="breed" @bind-Value="animal.Breed" class="form-control" placeholder="Labrador, Siamese, etc." />
+                        <ValidationMessage For="@(() => animal.Breed)" />
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="dob" class="form-label">Date of Birth (approximate is okay)</label>
+                    <InputDate id="dob" @bind-Value="animal.DateOfBirth" class="form-control" />
+                </div>
+                
+                <div class="form-check mb-3">
+                    <InputCheckbox id="isActive" @bind-Value="animal.IsActive" class="form-check-input" />
+                    <label class="form-check-label" for="isActive">
+                        Currently in shelter (uncheck if adopted or transferred)
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-secondary" @onclick="NavigateBack">Cancel</button>
+            <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                @if (isSaving)
+                {
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                    <span>Saving...</span>
+                }
+                else
+                {
+                    <span>Save Animal</span>
+                }
+            </button>
+        </div>
+    </EditForm>
+}
+
+<style>
+    .image-upload-container {
+        position: relative;
+        height: 200px;
+        cursor: pointer;
+    }
+    
+    .upload-preview {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .upload-placeholder {
+        width: 100%;
+        height: 100%;
+        background-color: #f8f9fa;
+    }
+    
+    .photo-input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string? AnimalId { get; set; }
+    
+    private Animal animal = new();
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private bool IsEditMode => !string.IsNullOrEmpty(AnimalId);
+    private string? uploadError;
+    private IBrowserFile? selectedFile;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        // Check if the user is authenticated
+        if (AuthService.CurrentUser == null)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+        
+        // If in edit mode, load the existing animal
+        if (IsEditMode)
+        {
+            await LoadAnimalAsync();
+        }
+        else
+        {
+            // For new animals, set defaults
+            animal.IsActive = true;
+            isLoading = false;
+        }
+    }
+    
+    private async Task LoadAnimalAsync()
+    {
+        try
+        {
+            string shelterId = AuthService.CurrentUser!.ShelterId;
+            
+            // Fetch the animal from Firestore
+            var loadedAnimal = await FirestoreService.GetAnimalAsync(shelterId, AnimalId!, AuthService.Token!);
+            
+            if (loadedAnimal != null)
+            {
+                animal = loadedAnimal;
+            }
+            else
+            {
+                // Animal not found, redirect back to list
+                NavigationManager.NavigateTo("/animals");
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading animal: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", "Error loading animal details. Please try again.");
+            NavigationManager.NavigateTo("/animals");
+            return;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+    
+    private async Task HandlePhotoSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            uploadError = null;
+            selectedFile = e.File;
+            
+            // Validate file size (max 5MB)
+            if (selectedFile.Size > 5 * 1024 * 1024)
+            {
+                uploadError = "File size must be less than 5MB";
+                return;
+            }
+            
+            // Show image preview
+            var imageBytes = new byte[selectedFile.Size];
+            await selectedFile.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024).ReadAsync(imageBytes);
+            var imageBase64 = Convert.ToBase64String(imageBytes);
+            var fileFormat = selectedFile.ContentType;
+            
+            animal.PhotoUrl = $"data:{fileFormat};base64,{imageBase64}";
+            
+            // We'll upload to Firebase Storage when the form is submitted
+        }
+        catch (Exception ex)
+        {
+            uploadError = $"Error processing image: {ex.Message}";
+        }
+    }
+    
+    private void RemovePhoto()
+    {
+        animal.PhotoUrl = null;
+        selectedFile = null;
+        uploadError = null;
+    }
+    
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            isSaving = true;
+            string shelterId = AuthService.CurrentUser!.ShelterId;
+            
+            // If we have a new file selected, upload it to Firebase Storage
+            if (selectedFile != null)
+            {
+                var imageUrl = await FirestoreService.UploadAnimalPhotoAsync(
+                    selectedFile, 
+                    shelterId,
+                    animal.Id ?? Guid.NewGuid().ToString(),
+                    AuthService.Token!);
+                
+                if (!string.IsNullOrEmpty(imageUrl))
+                {
+                    animal.PhotoUrl = imageUrl;
+                }
+            }
+            
+            bool success;
+            
+            if (IsEditMode)
+            {
+                // Update existing animal
+                success = await FirestoreService.UpdateAnimalAsync(shelterId, animal, AuthService.Token!);
+            }
+            else
+            {
+                // Create new animal
+                if (string.IsNullOrEmpty(animal.Id))
+                {
+                    animal.Id = Guid.NewGuid().ToString();
+                }
+                
+                success = await FirestoreService.CreateAnimalAsync(shelterId, animal, AuthService.Token!);
+            }
+            
+            if (success)
+            {
+                // Navigate back to the list
+                NavigationManager.NavigateTo("/animals");
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Error saving animal. Please try again.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving animal: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+    
+    private void NavigateBack()
+    {
+        NavigationManager.NavigateTo("/animals");
+    }
+}

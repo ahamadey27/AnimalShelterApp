@@ -209,5 +209,189 @@ namespace AnimalShelterApp.Services
             return null;
         }
     }
+
+    /// <summary>
+    /// Retrieves all animals for a specific shelter from Firestore
+    /// </summary>
+    public async Task<List<Animal>> GetAnimalsAsync(string shelterId, string authToken)
+    {
+        try
+        {
+            // Construct the URL to get all animals in the shelter's subcollection
+            var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/animals";
+            
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            
+            // Add auth token
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+            
+            var response = await _httpClient.SendAsync(request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var responseBody = await response.Content.ReadFromJsonAsync<JsonElement>();
+                
+                // Check if the 'documents' property exists and is an array
+                if (responseBody.TryGetProperty("documents", out JsonElement documents))
+                {
+                    var animalsList = new List<Animal>();
+                    
+                    // Process each document in the response
+                    foreach (var doc in documents.EnumerateArray())
+                    {
+                        try
+                        {
+                            // Extract the document name (last part is the ID)
+                            string documentPath = doc.GetProperty("name").GetString() ?? string.Empty;
+                            string animalId = documentPath.Split('/').Last();
+                            
+                            // Extract fields
+                            var fields = doc.GetProperty("fields");
+                            
+                            var animal = new Animal
+                            {
+                                Id = animalId,
+                                Name = fields.TryGetProperty("name", out var nameField) 
+                                    ? nameField.GetProperty("stringValue").GetString() ?? string.Empty 
+                                    : string.Empty,
+                                Species = fields.TryGetProperty("species", out var speciesField) 
+                                    ? speciesField.GetProperty("stringValue").GetString() ?? string.Empty 
+                                    : string.Empty,
+                                Breed = fields.TryGetProperty("breed", out var breedField) 
+                                    ? breedField.GetProperty("stringValue").GetString() ?? string.Empty 
+                                    : string.Empty,
+                                PhotoUrl = fields.TryGetProperty("photoUrl", out var photoField) 
+                                    ? photoField.GetProperty("stringValue").GetString() ?? string.Empty 
+                                    : string.Empty,
+                                IsActive = fields.TryGetProperty("isActive", out var activeField) 
+                                    && activeField.TryGetProperty("booleanValue", out var boolField) 
+                                    && boolField.GetBoolean()
+                            };
+                            
+                            // Parse date of birth if present
+                            if (fields.TryGetProperty("dateOfBirth", out var dobField) && 
+                                dobField.TryGetProperty("timestampValue", out var tsField))
+                            {
+                                string timestamp = tsField.GetString() ?? string.Empty;
+                                if (!string.IsNullOrEmpty(timestamp) && DateTime.TryParse(timestamp, out DateTime dob))
+                                {
+                                    animal.DateOfBirth = dob;
+                                }
+                            }
+                            
+                            animalsList.Add(animal);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error parsing animal document: {ex.Message}");
+                            // Continue processing other animals even if one fails
+                        }
+                    }
+                    
+                    return animalsList;
+                }
+                else
+                {
+                    // No documents array in the response, return an empty list
+                    Console.WriteLine("No animals found in the response");
+                    return new List<Animal>();
+                }
+            }
+            else
+            {
+                // Log error details
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"HTTP Error: {(int)response.StatusCode} {response.StatusCode}");
+                Console.WriteLine($"Error response: {errorContent}");
+                return new List<Animal>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving animals: {ex.Message}");
+            return new List<Animal>();
+        }
     }
-}
+
+    /// <summary>
+    /// Gets a specific animal from Firestore
+    /// </summary>
+    public async Task<Animal?> GetAnimalAsync(string shelterId, string animalId, string authToken)
+    {
+        try
+        {
+            // Construct URL to get a specific animal document
+            var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/animals/{animalId}";
+            
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+            
+            var response = await _httpClient.SendAsync(request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
+                
+                // Extract the fields from the document
+                var fields = doc.GetProperty("fields");
+                
+                var animal = new Animal
+                {
+                    Id = animalId,
+                    Name = fields.TryGetProperty("name", out var nameField) 
+                        ? nameField.GetProperty("stringValue").GetString() ?? string.Empty 
+                        : string.Empty,
+                    Species = fields.TryGetProperty("species", out var speciesField) 
+                        ? speciesField.GetProperty("stringValue").GetString() ?? string.Empty 
+                        : string.Empty,
+                    Breed = fields.TryGetProperty("breed", out var breedField) 
+                        ? breedField.GetProperty("stringValue").GetString() ?? string.Empty 
+                        : string.Empty,
+                    PhotoUrl = fields.TryGetProperty("photoUrl", out var photoField) 
+                        ? photoField.GetProperty("stringValue").GetString() ?? string.Empty 
+                        : string.Empty,
+                    IsActive = fields.TryGetProperty("isActive", out var activeField) 
+                        && activeField.TryGetProperty("booleanValue", out var boolField) 
+                        && boolField.GetBoolean()
+                };
+                
+                // Parse date of birth if present
+                if (fields.TryGetProperty("dateOfBirth", out var dobField) && 
+                    dobField.TryGetProperty("timestampValue", out var tsField))
+                {
+                    string timestamp = tsField.GetString() ?? string.Empty;
+                    if (!string.IsNullOrEmpty(timestamp) && DateTime.TryParse(timestamp, out DateTime dob))
+                    {
+                        animal.DateOfBirth = dob;
+                    }
+                }
+                
+                return animal;
+            }
+            else
+            {
+                // Log error details
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"HTTP Error: {(int)response.StatusCode} {response.StatusCode}");
+                Console.WriteLine($"Error response: {errorContent}");
+                return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving animal: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Creates a new animal in Firestore
+    /// </summary>
+    public async Task<bool> CreateAnimalAsync(string shelterId, Animal animal, string authToken)
+    {
+        try
+        {
+            // Construct URL with the animal ID
+            var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/animals?documentId={animal.Id}";
+            
+            // Build the request
