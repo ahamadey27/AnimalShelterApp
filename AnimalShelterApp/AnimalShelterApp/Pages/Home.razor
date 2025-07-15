@@ -1,7 +1,10 @@
 ﻿@page "/"
+@using AnimalShelterApp.Services
+@using AnimalShelterApp.Shared
 @inject AuthService AuthService
 @inject NavigationManager NavigationManager
 @inject FirestoreService FirestoreService
+@implements IDisposable
 
 <PageTitle>Home</PageTitle>
 
