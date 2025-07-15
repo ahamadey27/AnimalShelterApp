@@ -115,49 +115,62 @@ namespace AnimalShelterApp.Services
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var responseContent = await response.Content.ReadFromJsonAsync<JsonElement>();
-                    var idToken = responseContent.GetProperty("idToken").GetString();
-                    var uid = responseContent.GetProperty("localId").GetString();
-                    
-                    _token = idToken;
+                    try
+                    {
+                        var responseContent = await response.Content.ReadFromJsonAsync<JsonElement>();
+                        var idToken = responseContent.GetProperty("idToken").GetString();
+                        var uid = responseContent.GetProperty("localId").GetString();
+                        
+                        Console.WriteLine($"Registration successful. Got UID: {uid}");
+                        _token = idToken;
 
-                    // Create a new shelter
-                    var newShelter = new Shelter
+                        // Create a new shelter
+                        var newShelter = new Shelter
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            Name = shelterName,
+                            Address = shelterAddress
+                        };
+                        
+                        Console.WriteLine($"Attempting to create shelter with ID: {newShelter.Id}");
+                        // Add the shelter to Firestore
+                        var shelterCreated = await _firestoreService.CreateShelterAsync(newShelter, _token);
+                        
+                        if (!shelterCreated)
+                        {
+                            Console.WriteLine("Failed to create shelter");
+                            return false;
+                        }
+                        
+                        // Create a user profile
+                        _currentUser = new UserProfile
+                        {
+                            Uid = uid,
+                            Email = email,
+                            DisplayName = displayName,
+                            ShelterId = newShelter.Id
+                        };
+                        
+                        Console.WriteLine($"Attempting to create user profile for UID: {uid}");
+                        // Add the user profile to Firestore
+                        var profileCreated = await _firestoreService.CreateUserProfileAsync(_currentUser, _token);
+                        
+                        if (!profileCreated)
+                        {
+                            Console.WriteLine("Failed to create user profile");
+                            return false;
+                        }
+                        
+                        // Notify subscribers that auth state has changed
+                        OnAuthStateChanged?.Invoke();
+                        
+                        return true;
+                    }
+                    catch (Exception ex)
                     {
-                        Id = Guid.NewGuid().ToString(),
-                        Name = shelterName,
-                        Address = shelterAddress
-                    };
-                    
-                    // Add the shelter to Firestore
-                    var shelterCreated = await _firestoreService.CreateShelterAsync(newShelter, _token);
-                    
-                    if (!shelterCreated)
-                    {
+                        Console.WriteLine($"Error during registration process: {ex.Message}");
                         return false;
                     }
-                    
-                    // Create a user profile
-                    _currentUser = new UserProfile
-                    {
-                        Uid = uid,
-                        Email = email,
-                        DisplayName = displayName,
-                        ShelterId = newShelter.Id
-                    };
-                    
-                    // Add the user profile to Firestore
-                    var profileCreated = await _firestoreService.CreateUserProfileAsync(_currentUser, _token);
-                    
-                    if (!profileCreated)
-                    {
-                        return false;
-                    }
-                    
-                    // Notify subscribers that auth state has changed
-                    OnAuthStateChanged?.Invoke();
-                    
-                    return true;
                 }
                 else
                 {
