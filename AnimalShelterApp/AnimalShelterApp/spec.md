@@ -71,9 +71,9 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] Create a central `AuthService` in C# to manage user state across the app.
 
 ### Step 2: Animal Management (CRUD)
-- [ ] Create a page to display a list of all animals in the user's shelter.
-- [ ] Build a form (as a reusable component) for adding and editing an animal.
-- [ ] Integrate with Firebase Storage to handle photo uploads.
+- [x] Create a page to display a list of all animals in the user's shelter.
+- [x] Build a form (as a reusable component) for adding and editing an animal.
+- [x] Integrate with Firebase Storage to handle photo uploads.
 
 ### Step 3: Medication & Scheduling
 - [ ] Create a simple UI to manage a list of common medications for the shelter.
