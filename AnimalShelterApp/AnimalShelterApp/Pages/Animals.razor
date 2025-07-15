@@ -91,43 +91,38 @@ else
 </style>
 
 @code {
-    private bool isLoading = true;
     private List<Animal>? animals;
-    
+
     protected override async Task OnInitializedAsync()
     {
-        // Check if the user is authenticated
-        if (AuthService.CurrentUser == null)
+        if (AuthService.CurrentUser == null || string.IsNullOrEmpty(AuthService.Token))
         {
-            NavigationManager.NavigateTo("/login");
+            NavigationManager.NavigateTo("/login?redirectUri=/animals");
             return;
         }
-        
-        await LoadAnimalsAsync();
-    }
-    
-    private async Task LoadAnimalsAsync()
-    {
-        try
+
+        // Ensure shelter information is loaded
+        if (AuthService.CurrentUser.Shelter == null && !string.IsNullOrEmpty(AuthService.CurrentUser.ShelterId))
         {
-            // Get the shelter ID from the current user profile
-            string shelterId = AuthService.CurrentUser!.ShelterId;
-            
-            // Load animals for this shelter from Firestore
-            animals = await FirestoreService.GetAnimalsAsync(shelterId, AuthService.Token!);
-            
-            isLoading = false;
+            var shelter = await FirestoreService.GetShelterAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
+            if (shelter != null)
+            {
+                AuthService.CurrentUser.Shelter = shelter;
+            }
         }
-        catch (Exception ex)
+
+        if (!string.IsNullOrEmpty(AuthService.CurrentUser.ShelterId))
         {
-            Console.WriteLine($"Error loading animals: {ex.Message}");
-            
-            // Initialize an empty list so we show the "no animals" message
+            animals = await FirestoreService.GetAnimalsAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
+        }
+        else
+        {
+            // Handle case where user has no shelter ID, maybe show a message
             animals = new List<Animal>();
-            isLoading = false;
+            // Optionally, you could add a message to the user here.
         }
     }
-    
+
     private string GetAnimalAge(Animal animal)
     {
         if (!animal.DateOfBirth.HasValue)

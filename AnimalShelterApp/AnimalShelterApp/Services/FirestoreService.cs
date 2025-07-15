@@ -391,7 +391,144 @@ namespace AnimalShelterApp.Services
     {
         try
         {
-            // Construct URL with the animal ID
+            // Firestore API URL to create a document with a specific ID
             var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/animals?documentId={animal.Id}";
             
-            // Build the request
+            var content = new { fields = BuildAnimalFields(animal) };
+            
+            var request = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = JsonContent.Create(content)
+            };
+            
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+            
+            var response = await _httpClient.SendAsync(request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+            
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Error creating animal: {errorContent}");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating animal: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Updates an existing animal in Firestore
+    /// </summary>
+    public async Task<bool> UpdateAnimalAsync(string shelterId, Animal animal, string authToken)
+    {
+        try
+        {
+            // Firestore API URL to update a document
+            var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/animals/{animal.Id}";
+            
+            var content = new { fields = BuildAnimalFields(animal) };
+            
+            var request = new HttpRequestMessage(new HttpMethod("PATCH"), url)
+            {
+                Content = JsonContent.Create(content)
+            };
+            
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+            
+            var response = await _httpClient.SendAsync(request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+            
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Error updating animal: {errorContent}");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating animal: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Uploads a photo to Firebase Storage and returns the public URL
+    /// </summary>
+    public async Task<string?> UploadAnimalPhotoAsync(string shelterId, string animalId, Stream photoStream, string contentType, string authToken)
+    {
+        try
+        {
+            var storageBucket = _configuration["Firebase:storageBucket"];
+            if (string.IsNullOrEmpty(storageBucket))
+            {
+                Console.WriteLine("Firebase storage bucket is not configured in appsettings.json");
+                return null;
+            }
+
+            // Define the object path in Firebase Storage
+            var objectPath = $"shelters/{shelterId}/animals/{animalId}.jpg";
+            var url = $"https://firebasestorage.googleapis.com/v0/b/{storageBucket}/o/{Uri.EscapeDataString(objectPath)}";
+
+            var request = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StreamContent(photoStream)
+            };
+            request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+
+            var response = await _httpClient.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseData = await response.Content.ReadFromJsonAsync<JsonElement>();
+                var downloadToken = responseData.GetProperty("downloadTokens").GetString();
+                
+                // Construct the public URL
+                return $"{url}?alt=media&token={downloadToken}";
+            }
+
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Error uploading photo: {errorContent}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error uploading photo: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Helper method to build the 'fields' object for an animal
+    /// </summary>
+    private object BuildAnimalFields(Animal animal)
+    {
+        var fields = new Dictionary<string, object>
+        {
+            { "name", new { stringValue = animal.Name ?? "" } },
+            { "species", new { stringValue = animal.Species ?? "" } },
+            { "breed", new { stringValue = animal.Breed ?? "" } },
+            { "photoUrl", new { stringValue = animal.PhotoUrl ?? "" } },
+            { "isActive", new { booleanValue = animal.IsActive } }
+        };
+
+        if (animal.DateOfBirth.HasValue)
+        {
+            fields["dateOfBirth"] = new { timestampValue = animal.DateOfBirth.Value.ToUniversalTime().ToString("o") };
+        }
+        else
+        {
+            fields["dateOfBirth"] = new { nullValue = (object?)null };
+        }
+
+        return fields;
+    }
+    }
+}

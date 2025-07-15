@@ -9,9 +9,14 @@
 @inject FirestoreService FirestoreService
 @inject IJSRuntime JSRuntime
 
-<h3>@(IsEditMode ? "Edit Animal" : "Add New Animal")</h3>
+<h3>@(string.IsNullOrEmpty(AnimalId) ? "Add New Animal" : "Edit Animal")</h3>
 
-@if (isLoading)
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+@if (animal == null)
 {
     <div class="d-flex justify-content-center">
         <div class="spinner-border" role="status">
@@ -147,158 +152,125 @@ else
     private bool IsEditMode => !string.IsNullOrEmpty(AnimalId);
     private string? uploadError;
     private IBrowserFile? selectedFile;
-    
+    private IBrowserFile? selectedPhoto;
+    private string? photoPreviewUrl;
+    private string? errorMessage;
+
     protected override async Task OnInitializedAsync()
     {
-        // Check if the user is authenticated
-        if (AuthService.CurrentUser == null)
+        if (AuthService.CurrentUser == null || string.IsNullOrEmpty(AuthService.Token))
         {
-            NavigationManager.NavigateTo("/login");
+            // Use the current URI for the redirect to handle both add and edit modes correctly
+            var redirectUri = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+            NavigationManager.NavigateTo($"/login?redirectUri={Uri.EscapeDataString(redirectUri)}");
             return;
         }
-        
-        // If in edit mode, load the existing animal
-        if (IsEditMode)
+
+        if (!string.IsNullOrEmpty(AnimalId))
         {
-            await LoadAnimalAsync();
-        }
-        else
-        {
-            // For new animals, set defaults
-            animal.IsActive = true;
-            isLoading = false;
-        }
-    }
-    
-    private async Task LoadAnimalAsync()
-    {
-        try
-        {
-            string shelterId = AuthService.CurrentUser!.ShelterId;
-            
-            // Fetch the animal from Firestore
-            var loadedAnimal = await FirestoreService.GetAnimalAsync(shelterId, AnimalId!, AuthService.Token!);
-            
-            if (loadedAnimal != null)
+            // Edit mode
+            if (!string.IsNullOrEmpty(AuthService.CurrentUser.ShelterId))
             {
-                animal = loadedAnimal;
+                animal = await FirestoreService.GetAnimalAsync(AuthService.CurrentUser.ShelterId, AnimalId, AuthService.Token);
+                if (animal == null)
+                {
+                    errorMessage = "Could not find the specified animal.";
+                }
             }
             else
             {
-                // Animal not found, redirect back to list
-                NavigationManager.NavigateTo("/animals");
-                return;
+                errorMessage = "Cannot edit animal because your user has no associated shelter.";
             }
         }
-        catch (Exception ex)
+        else
         {
-            Console.WriteLine($"Error loading animal: {ex.Message}");
-            await JSRuntime.InvokeVoidAsync("alert", "Error loading animal details. Please try again.");
-            NavigationManager.NavigateTo("/animals");
+            // Add mode
+            animal = new Animal { Id = Guid.NewGuid().ToString(), IsActive = true, Name = "", Species = "", Breed = "", PhotoUrl = "" };
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        errorMessage = null; // Clear previous errors
+        if (animal == null || AuthService.CurrentUser == null || string.IsNullOrEmpty(AuthService.CurrentUser.ShelterId) || string.IsNullOrEmpty(AuthService.Token))
+        {
+            errorMessage = "Cannot save animal. User or shelter information is missing.";
             return;
         }
-        finally
+
+        // 1. Handle photo upload first
+        if (selectedPhoto != null)
         {
-            isLoading = false;
+            // 5MB limit for photos
+            using var stream = selectedPhoto.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024); 
+            var photoUrl = await FirestoreService.UploadAnimalPhotoAsync(AuthService.CurrentUser.ShelterId, animal.Id, stream, selectedPhoto.ContentType, AuthService.Token);
+            
+            if (photoUrl != null)
+            {
+                animal.PhotoUrl = photoUrl;
+            }
+            else
+            {
+                errorMessage = "Failed to upload photo. Please try again.";
+                return; // Stop if photo upload fails
+            }
+        }
+
+        // 2. Create or Update the animal document
+        bool success;
+        if (string.IsNullOrEmpty(AnimalId))
+        {
+            // Create new animal
+            success = await FirestoreService.CreateAnimalAsync(AuthService.CurrentUser.ShelterId, animal, AuthService.Token);
+        }
+        else
+        {
+            // Update existing animal
+            success = await FirestoreService.UpdateAnimalAsync(AuthService.CurrentUser.ShelterId, animal, AuthService.Token);
+        }
+
+        if (success)
+        {
+            NavigationManager.NavigateTo("/animals");
+        }
+        else
+        {
+            errorMessage = "Failed to save animal details to the database.";
         }
     }
-    
+
     private async Task HandlePhotoSelected(InputFileChangeEventArgs e)
     {
-        try
+        selectedPhoto = e.File;
+        if (selectedPhoto != null)
         {
-            uploadError = null;
-            selectedFile = e.File;
-            
-            // Validate file size (max 5MB)
-            if (selectedFile.Size > 5 * 1024 * 1024)
+            // Generate a preview URL
+            photoPreviewUrl = null; // Clear previous preview
+            var format = "image/jpeg";
+            if(selectedPhoto.ContentType == "image/png") format = "image/png";
+
+            try
             {
-                uploadError = "File size must be less than 5MB";
-                return;
+                var imageFile = await selectedPhoto.RequestImageFileAsync(format, 200, 200);
+                using var imageStream = imageFile.OpenReadStream(5 * 1024 * 1024); // 5MB limit
+                using var memoryStream = new MemoryStream();
+                await imageStream.CopyToAsync(memoryStream);
+                
+                photoPreviewUrl = $"data:{format};base64,{Convert.ToBase64String(memoryStream.ToArray())}";
+                StateHasChanged();
             }
-            
-            // Show image preview
-            var imageBytes = new byte[selectedFile.Size];
-            await selectedFile.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024).ReadAsync(imageBytes);
-            var imageBase64 = Convert.ToBase64String(imageBytes);
-            var fileFormat = selectedFile.ContentType;
-            
-            animal.PhotoUrl = $"data:{fileFormat};base64,{imageBase64}";
-            
-            // We'll upload to Firebase Storage when the form is submitted
-        }
-        catch (Exception ex)
-        {
-            uploadError = $"Error processing image: {ex.Message}";
+            catch (Exception ex)
+            {
+                errorMessage = $"Error generating photo preview: {ex.Message}";
+            }
         }
     }
-    
+
     private void RemovePhoto()
     {
         animal.PhotoUrl = null;
         selectedFile = null;
         uploadError = null;
-    }
-    
-    private async Task HandleValidSubmit()
-    {
-        try
-        {
-            isSaving = true;
-            string shelterId = AuthService.CurrentUser!.ShelterId;
-            
-            // If we have a new file selected, upload it to Firebase Storage
-            if (selectedFile != null)
-            {
-                var imageUrl = await FirestoreService.UploadAnimalPhotoAsync(
-                    selectedFile, 
-                    shelterId,
-                    animal.Id ?? Guid.NewGuid().ToString(),
-                    AuthService.Token!);
-                
-                if (!string.IsNullOrEmpty(imageUrl))
-                {
-                    animal.PhotoUrl = imageUrl;
-                }
-            }
-            
-            bool success;
-            
-            if (IsEditMode)
-            {
-                // Update existing animal
-                success = await FirestoreService.UpdateAnimalAsync(shelterId, animal, AuthService.Token!);
-            }
-            else
-            {
-                // Create new animal
-                if (string.IsNullOrEmpty(animal.Id))
-                {
-                    animal.Id = Guid.NewGuid().ToString();
-                }
-                
-                success = await FirestoreService.CreateAnimalAsync(shelterId, animal, AuthService.Token!);
-            }
-            
-            if (success)
-            {
-                // Navigate back to the list
-                NavigationManager.NavigateTo("/animals");
-            }
-            else
-            {
-                await JSRuntime.InvokeVoidAsync("alert", "Error saving animal. Please try again.");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error saving animal: {ex.Message}");
-            await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
-        }
-        finally
-        {
-            isSaving = false;
-        }
     }
     
     private void NavigateBack()
