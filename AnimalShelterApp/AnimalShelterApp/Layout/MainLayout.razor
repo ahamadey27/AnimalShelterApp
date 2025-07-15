@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
 @inject AuthService AuthService
 @inject NavigationManager NavigationManager
 
@@ -9,7 +10,7 @@
 
     <main>
         <div class="top-row px-4">
-            @if (AuthService.CurrentUser != null)
+            @if (AuthService?.CurrentUser != null)
             {
                 <span class="me-3">Hello, @AuthService.CurrentUser.DisplayName!</span>
                 <button class="btn btn-sm btn-outline-danger" @onclick="Logout">Logout</button>
@@ -31,17 +32,30 @@
     protected override void OnInitialized()
     {
         // Subscribe to auth state changes to refresh UI
-        AuthService.OnAuthStateChanged += StateHasChanged;
+        if (AuthService != null)
+        {
+            AuthService.OnAuthStateChanged += StateHasChanged;
+        }
     }
 
     public void Dispose()
     {
-        AuthService.OnAuthStateChanged -= StateHasChanged;
+        if (AuthService != null)
+        {
+            AuthService.OnAuthStateChanged -= StateHasChanged;
+        }
     }
     
     private void Logout()
     {
-        AuthService.Logout();
-        NavigationManager.NavigateTo("/login");
+        if (AuthService != null)
+        {
+            AuthService.Logout();
+        }
+        
+        if (NavigationManager != null)
+        {
+            NavigationManager.NavigateTo("/login");
+        }
     }
 }
