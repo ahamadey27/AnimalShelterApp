@@ -2,6 +2,7 @@
 @using System
 @using System.Threading.Tasks
 @using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
 @using AnimalShelterApp.Services
 @using AnimalShelterApp.Shared
 @inject AuthService AuthService
@@ -9,7 +10,7 @@
 @inject FirestoreService FirestoreService
 @implements IDisposable
 
-<PageTitle>Home</PageTitle>
+<h1>Home</h1>
 
 @if (AuthService.CurrentUser != null)
 {
