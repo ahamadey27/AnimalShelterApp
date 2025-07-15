@@ -88,29 +88,29 @@
     {
         [Required(ErrorMessage = "Email is required.")]
         [EmailAddress(ErrorMessage = "Invalid email address.")]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
         
         [Required(ErrorMessage = "Your name is required.")]
-        public string DisplayName { get; set; }
+        public string DisplayName { get; set; } = string.Empty;
         
         [Required(ErrorMessage = "Password is required.")]
         [MinLength(6, ErrorMessage = "Password must be at least 6 characters.")]
-        public string Password { get; set; }
+        public string Password { get; set; } = string.Empty;
         
         [Required(ErrorMessage = "Confirm password is required.")]
         [Compare(nameof(Password), ErrorMessage = "Passwords do not match.")]
-        public string ConfirmPassword { get; set; }
+        public string ConfirmPassword { get; set; } = string.Empty;
         
         [Required(ErrorMessage = "Shelter name is required.")]
-        public string ShelterName { get; set; }
+        public string ShelterName { get; set; } = string.Empty;
         
         [Required(ErrorMessage = "Shelter address is required.")]
-        public string ShelterAddress { get; set; }
+        public string ShelterAddress { get; set; } = string.Empty;
     }
     
     private RegistrationModel registrationModel = new RegistrationModel();
     private bool isLoading = false;
-    private string errorMessage;
+    private string errorMessage = string.Empty;
     
     private async Task HandleRegistration()
     {
@@ -131,10 +131,11 @@
             {
                 // Navigate to dashboard on successful registration
                 NavigationManager.NavigateTo("/");
-            }                else
-                {
-                    errorMessage = $"Registration failed. {ex.Message}";
-                }
+            }
+            else
+            {
+                errorMessage = "Registration failed. The email might already be in use.";
+            }
         }
         catch (Exception ex)
         {
