@@ -22,5 +22,9 @@ namespace AnimalShelterApp.Shared
         // This is the crucial link that connects a user to an organization's data.
         public string ShelterId { get; set; } = string.Empty;
 
+        // A navigation property to hold the full Shelter object.
+        // This is not stored in Firestore but is populated at runtime.
+        [System.Text.Json.Serialization.JsonIgnore]
+        public Shelter? Shelter { get; set; }
     }
 }

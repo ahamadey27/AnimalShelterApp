@@ -92,34 +92,42 @@ else
 
 @code {
     private List<Animal>? animals;
+    private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        if (AuthService.CurrentUser == null || string.IsNullOrEmpty(AuthService.Token))
+        try
         {
-            NavigationManager.NavigateTo("/login?redirectUri=/animals");
-            return;
-        }
-
-        // Ensure shelter information is loaded
-        if (AuthService.CurrentUser.Shelter == null && !string.IsNullOrEmpty(AuthService.CurrentUser.ShelterId))
-        {
-            var shelter = await FirestoreService.GetShelterAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
-            if (shelter != null)
+            if (AuthService.CurrentUser == null || string.IsNullOrEmpty(AuthService.Token))
             {
-                AuthService.CurrentUser.Shelter = shelter;
+                NavigationManager.NavigateTo("/login?redirectUri=/animals");
+                return;
+            }
+
+            // Ensure shelter information is loaded
+            if (AuthService.CurrentUser.Shelter == null && !string.IsNullOrEmpty(AuthService.CurrentUser.ShelterId))
+            {
+                var shelter = await FirestoreService.GetShelterAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
+                if (shelter != null)
+                {
+                    AuthService.CurrentUser.Shelter = shelter;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(AuthService.CurrentUser.ShelterId))
+            {
+                animals = await FirestoreService.GetAnimalsAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
+            }
+            else
+            {
+                // Handle case where user has no shelter ID, maybe show a message
+                animals = new List<Animal>();
+                // Optionally, you could add a message to the user here.
             }
         }
-
-        if (!string.IsNullOrEmpty(AuthService.CurrentUser.ShelterId))
+        finally
         {
-            animals = await FirestoreService.GetAnimalsAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
-        }
-        else
-        {
-            // Handle case where user has no shelter ID, maybe show a message
-            animals = new List<Animal>();
-            // Optionally, you could add a message to the user here.
+            isLoading = false;
         }
     }
 
@@ -154,6 +162,6 @@ else
     
     private void NavigateToAnimalDetails(string animalId)
     {
-        NavigationManager.NavigateTo($"/animals/details/{animalId}");
+        NavigationManager.NavigateTo($"/animals/{animalId}");
     }
 }
