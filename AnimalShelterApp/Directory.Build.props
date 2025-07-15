@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <RootNamespace>AnimalShelterApp</RootNamespace>
+    <AssemblyName>AnimalShelterApp</AssemblyName>
+  </PropertyGroup>
+</Project>
