@@ -140,5 +140,48 @@ namespace AnimalShelterApp.Services
                 return null;
             }
         }
+
+    /// <summary>
+    /// Gets a shelter from Firestore by ID
+    /// </summary>
+    public async Task<Shelter?> GetShelterAsync(string shelterId, string authToken)
+    {
+        try
+        {
+            var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}";
+            
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            
+            // Add auth token
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+            
+            var response = await _httpClient.SendAsync(request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+                
+                // Parse the Firestore document
+                var fields = content.GetProperty("fields");
+                
+                var nameValue = fields.GetProperty("name").GetProperty("stringValue").GetString() ?? "Unknown Shelter";
+                var addressValue = fields.GetProperty("address").GetProperty("stringValue").GetString() ?? "No address provided";
+                
+                return new Shelter
+                {
+                    Id = shelterId,
+                    Name = nameValue,
+                    Address = addressValue
+                };
+            }
+            
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error getting shelter: {ex.Message}");
+            return null;
+        }
+    }
     }
 }

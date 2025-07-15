@@ -1,6 +1,7 @@
 ﻿@page "/"
 @inject AuthService AuthService
 @inject NavigationManager NavigationManager
+@inject FirestoreService FirestoreService
 
 <PageTitle>Home</PageTitle>
 
@@ -9,9 +10,16 @@
     <div class="container">
         <div class="jumbotron">
             <h1 class="display-4">Welcome to Pet Medication Tracker!</h1>
-            <p class="lead">
-                Hello, @AuthService.CurrentUser.DisplayName! This dashboard will help you track medications for all animals in @shelter.Name.
-            </p>
+            @if (isLoading)
+            {
+                <p>Loading shelter information...</p>
+            }
+            else
+            {
+                <p class="lead">
+                    Hello, @AuthService.CurrentUser.DisplayName! This dashboard will help you track medications for all animals in @shelter?.Name.
+                </p>
+            }
             <hr class="my-4">
             <p>
                 Get started by adding animals and their medication schedules. Then use the main dashboard to log doses as they're administered.
@@ -44,26 +52,60 @@ else
 }
 
 @code {
-    private Shelter shelter = new Shelter(); 
+    private Shelter? shelter = new Shelter(); 
+    private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
         // Subscribe to auth state changes
-        AuthService.OnAuthStateChanged += StateHasChanged;
+        AuthService.OnAuthStateChanged += AuthStateChanged;
 
+        await LoadShelterData();
+    }
+    
+    private async Task LoadShelterData()
+    {
+        isLoading = true;
+        
         // If logged in, get shelter information
         if (AuthService.CurrentUser != null)
         {
-            // In a real implementation, we would fetch the shelter from FirestoreService
-            shelter = new Shelter { 
-                Id = AuthService.CurrentUser.ShelterId,
-                Name = "Your Shelter" // Placeholder, will be replaced with actual data later
-            };
+            try
+            {
+                // Get the shelter from FirestoreService using the injected service
+                shelter = await FirestoreService.GetShelterAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
+                
+                // If shelter couldn't be loaded, use a placeholder
+                if (shelter == null)
+                {
+                    shelter = new Shelter { 
+                        Id = AuthService.CurrentUser.ShelterId,
+                        Name = "Your Shelter" // Fallback placeholder
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading shelter: {ex.Message}");
+                shelter = new Shelter { 
+                    Id = AuthService.CurrentUser.ShelterId,
+                    Name = "Your Shelter" // Fallback placeholder
+                };
+            }
         }
+        
+        isLoading = false;
+        StateHasChanged();
+    }
+    
+    private async void AuthStateChanged()
+    {
+        await LoadShelterData();
+        StateHasChanged();
     }
 
     public void Dispose()
     {
-        AuthService.OnAuthStateChanged -= StateHasChanged;
+        AuthService.OnAuthStateChanged -= AuthStateChanged;
     }
 }
