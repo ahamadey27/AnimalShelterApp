@@ -208,5 +208,37 @@ namespace AnimalShelterApp.Services
             _token = null;
             OnAuthStateChanged?.Invoke();
         }
+
+        /// <summary>
+        /// Initialize the authentication state, checking if user is already logged in
+        /// </summary>
+        public Task InitializeAsync()
+        {
+            // Since we don't have persistent login implemented yet,
+            // this is just a placeholder for future implementation
+            // We might use localStorage or similar to keep login state
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Get the current user's profile
+        /// </summary>
+        public Task<UserProfile> GetUserProfileAsync()
+        {
+            if (_currentUser == null)
+            {
+                throw new InvalidOperationException("No user is currently logged in");
+            }
+            return Task.FromResult(_currentUser);
+        }
+
+        /// <summary>
+        /// Sign out the current user
+        /// </summary>
+        public Task SignOutAsync()
+        {
+            Logout();
+            return Task.CompletedTask;
+        }
     }
 }

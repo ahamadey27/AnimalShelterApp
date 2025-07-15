@@ -48,31 +48,44 @@
     private string? testResult;
     private bool testSuccess = false;
     
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync()
     {
-        // Check if the user is already authenticated
-        await AuthService.InitializeAsync();
+        // The AuthService already has the user loaded if they're authenticated
+        // No need to initialize anything here
         isLoading = false;
+        return Task.CompletedTask;
     }
     
-    private async Task TestGetProfile()
+    private Task TestGetProfile()
     {
         try
         {
-            var profile = await AuthService.GetUserProfileAsync();
-            testResult = $"Successfully retrieved profile for {profile.DisplayName}";
-            testSuccess = true;
+            // The current user profile is already available in AuthService.CurrentUser
+            // No need for a separate method call
+            if (AuthService.CurrentUser != null)
+            {
+                testResult = $"Profile is available for {AuthService.CurrentUser.DisplayName}";
+                testSuccess = true;
+            }
+            else
+            {
+                testResult = "No user profile available";
+                testSuccess = false;
+            }
         }
         catch (Exception ex)
         {
             testResult = $"Error: {ex.Message}";
             testSuccess = false;
         }
+        
+        return Task.CompletedTask;
     }
     
-    private async Task LogoutAsync()
+    private Task LogoutAsync()
     {
-        await AuthService.SignOutAsync();
+        AuthService.Logout();
         NavigationManager.NavigateTo("/login");
+        return Task.CompletedTask;
     }
 }
