@@ -202,9 +202,15 @@ else
         if (selectedPhoto != null)
         {
             // 5MB limit for photos
-            using var stream = selectedPhoto.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024); 
-            var photoUrl = await FirestoreService.UploadAnimalPhotoAsync(AuthService.CurrentUser.ShelterId, animal.Id, stream, selectedPhoto.ContentType, AuthService.Token);
-            
+            using var stream = selectedPhoto.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+            var photoUrl = await FirestoreService.UploadAnimalPhotoAsync(
+                AuthService.CurrentUser.ShelterId,
+                animal.Id,
+                stream,
+                selectedPhoto.Name, // Pass the filename
+                selectedPhoto.ContentType,
+                AuthService.Token);
+
             if (photoUrl != null)
             {
                 animal.PhotoUrl = photoUrl;

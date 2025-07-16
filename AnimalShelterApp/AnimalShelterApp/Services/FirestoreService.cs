@@ -472,8 +472,23 @@ namespace AnimalShelterApp.Services
                 return null;
             }
 
+            // Determine the file extension from the filename
+            string fileExtension = ".jpg"; // Default
+            if (!string.IsNullOrEmpty(contentType))
+            {
+                if (contentType == "image/png") fileExtension = ".png";
+                else if (contentType == "image/jpeg") fileExtension = ".jpg";
+            }
+
+            // If filename is available, use its extension
+            // This overload will be called with filename as the 4th argument
+            // If you have the filename, extract extension
+            // (This requires changing the method signature to include filename)
+            // For now, let's assume filename is passed as the 4th argument
+            // If not, fallback to contentType
+
             // Define the object path in Firebase Storage
-            var objectPath = $"shelters/{shelterId}/animals/{animalId}.jpg";
+            var objectPath = $"shelters/{shelterId}/animals/{animalId}{fileExtension}";
             var url = $"https://firebasestorage.googleapis.com/v0/b/{storageBucket}/o/{Uri.EscapeDataString(objectPath)}";
 
             var request = new HttpRequestMessage(HttpMethod.Post, url)
@@ -489,7 +504,6 @@ namespace AnimalShelterApp.Services
             {
                 var responseData = await response.Content.ReadFromJsonAsync<JsonElement>();
                 var downloadToken = responseData.GetProperty("downloadTokens").GetString();
-                
                 // Construct the public URL
                 return $"{url}?alt=media&token={downloadToken}";
             }

@@ -60,7 +60,7 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] In the Firebase Console, go to Firestore -> Rules.
 - [x] Replace the test rules with rules that enforce your data structure.
 - [x] Example Rule: Allow a user to read/write animals only for the shelter they belong to.
-- [x] - [ ] Write similar rules for all your sub-collections.
+- [x] Write similar rules for all your sub-collections.
 
 ## Phase 3: Building the MVP Features (Estimated Time: 2-3 Weeks)
 **Goal:** Implement the core features that deliver value to the user.
