@@ -461,7 +461,7 @@ namespace AnimalShelterApp.Services
     /// <summary>
     /// Uploads a photo to Firebase Storage and returns the public URL
     /// </summary>
-    public async Task<string?> UploadAnimalPhotoAsync(string shelterId, string animalId, Stream photoStream, string contentType, string authToken)
+public async Task<string?> UploadAnimalPhotoAsync(string shelterId, string animalId, Stream photoStream, string fileName, string contentType, string authToken)
     {
         try
         {
@@ -473,19 +473,20 @@ namespace AnimalShelterApp.Services
             }
 
             // Determine the file extension from the filename
-            string fileExtension = ".jpg"; // Default
-            if (!string.IsNullOrEmpty(contentType))
+            string fileExtension = System.IO.Path.GetExtension(fileName);
+            if (string.IsNullOrEmpty(fileExtension))
             {
-                if (contentType == "image/png") fileExtension = ".png";
-                else if (contentType == "image/jpeg") fileExtension = ".jpg";
+                // Fallback to contentType if extension is missing
+                if (!string.IsNullOrEmpty(contentType))
+                {
+                    if (contentType == "image/png") fileExtension = ".png";
+                    else if (contentType == "image/jpeg") fileExtension = ".jpg";
+                }
+                else
+                {
+                    fileExtension = ".jpg";
+                }
             }
-
-            // If filename is available, use its extension
-            // This overload will be called with filename as the 4th argument
-            // If you have the filename, extract extension
-            // (This requires changing the method signature to include filename)
-            // For now, let's assume filename is passed as the 4th argument
-            // If not, fallback to contentType
 
             // Define the object path in Firebase Storage
             var objectPath = $"shelters/{shelterId}/animals/{animalId}{fileExtension}";
