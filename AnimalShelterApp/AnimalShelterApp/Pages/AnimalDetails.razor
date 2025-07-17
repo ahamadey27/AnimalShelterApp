@@ -175,9 +175,11 @@ else
 
     private async Task AddAnimalAuto()
     {
+        var guidStr = Guid.NewGuid().ToString();
         var newAnimal = new Animal
         {
-            Name = "Auto-" + Guid.NewGuid().ToString().Substring(0, 8),
+            // Use the first 8 characters of the GUID for a readable ID
+            Name = "Auto-" + guidStr.Substring(0, 8),
             Species = "Unknown",
             Breed = "Unknown",
             DateOfBirth = DateTime.Today,
