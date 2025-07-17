@@ -185,6 +185,13 @@ else
             // Add other default fields as needed
         };
 
+        if (AuthService.CurrentUser == null || string.IsNullOrEmpty(AuthService.CurrentUser.ShelterId))
+        {
+            // Handle error: user not authenticated or shelterId missing
+            Console.WriteLine("User not authenticated or shelterId missing.");
+            return;
+        }
+
         // Save to Firestore (adjust for your service)
         var shelterId = AuthService.CurrentUser.ShelterId;
         var createdId = await FirestoreService.AddAnimalAsync(shelterId, newAnimal, AuthService.Token);
