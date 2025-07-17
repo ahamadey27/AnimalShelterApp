@@ -548,9 +548,9 @@ public async Task<string?> UploadAnimalPhotoAsync(string shelterId, string anima
 
     public async Task<string> AddAnimalAsync(string shelterId, Animal animal, string authToken)
     {
-        // Firestore API URL to add a new animal document
-        var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/animals";
-        var content = new { fields = BuildAnimalFields(animal) };        
+        // Firestore API URL to add a new animal document with custom documentId
+        var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/animals?documentId={animal.Id}";
+        var content = new { fields = BuildAnimalFields(animal) };
 
         var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
@@ -562,8 +562,7 @@ public async Task<string?> UploadAnimalPhotoAsync(string shelterId, string anima
         response.EnsureSuccessStatusCode();
 
         var responseBody = await response.Content.ReadFromJsonAsync<JsonElement>();
-        string newId = responseBody.GetProperty("name").GetString().Split('/').Last();
-
+        string newId = animal.Id;
         return newId;
     }
     }
