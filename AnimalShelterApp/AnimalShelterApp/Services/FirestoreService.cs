@@ -337,7 +337,6 @@ namespace AnimalShelterApp.Services
                 
                 var animal = new Animal
                 {
-                    Id = animalId,
                     Name = fields.TryGetProperty("name", out var nameField) 
                         ? nameField.GetProperty("stringValue").GetString() ?? string.Empty 
                         : string.Empty,
@@ -350,11 +349,10 @@ namespace AnimalShelterApp.Services
                     PhotoUrl = fields.TryGetProperty("photoUrl", out var photoField) 
                         ? photoField.GetProperty("stringValue").GetString() ?? string.Empty 
                         : string.Empty,
-                    IsActive = fields.TryGetProperty("isActive", out var activeField) 
-                        && activeField.TryGetProperty("booleanValue", out var boolField) 
-                        && boolField.GetBoolean()
+                    IsActive = fields.TryGetProperty("isActive", out var activeField) &&
+                        activeField.TryGetProperty("booleanValue", out var boolField) && boolField.GetBoolean()
                 };
-                
+
                 // Parse date of birth if present
                 if (fields.TryGetProperty("dateOfBirth", out var dobField) && 
                     dobField.TryGetProperty("timestampValue", out var tsField))
@@ -365,7 +363,18 @@ namespace AnimalShelterApp.Services
                         animal.DateOfBirth = dob;
                     }
                 }
-                
+
+                // Use the document name (last segment) as the ID
+                if (doc.TryGetProperty("name", out var nameProp))
+                {
+                    var segments = nameProp.GetString()?.Split('/');
+                    animal.Id = segments != null ? segments[^1] : animalId;
+                }
+                else
+                {
+                    animal.Id = animalId;
+                }
+
                 return animal;
             }
             else
@@ -525,6 +534,7 @@ public async Task<string?> UploadAnimalPhotoAsync(string shelterId, string anima
     /// </summary>
     private object BuildAnimalFields(Animal animal)
     {
+        // Do NOT include the Id property in Firestore fields, only use documentId for Firestore doc name
         var fields = new Dictionary<string, object>
         {
             { "name", new { stringValue = animal.Name ?? "" } },
