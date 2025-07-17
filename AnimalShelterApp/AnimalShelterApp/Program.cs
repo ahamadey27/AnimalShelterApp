@@ -13,3 +13,5 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<FirestoreService>();
 
 await builder.Build().RunAsync();
+
+

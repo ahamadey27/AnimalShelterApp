@@ -18,11 +18,11 @@ namespace AnimalShelterApp.Services
         private readonly string _apiKey;
         private readonly IConfiguration _configuration;
         private readonly FirestoreService _firestoreService;
-        
+
         // User data that persists throughout the session
         private UserProfile? _currentUser;
         private string? _token;
-        
+
         public event Action? OnAuthStateChanged;
 
         public AuthService(HttpClient httpClient, IConfiguration configuration, FirestoreService firestoreService)
@@ -62,22 +62,22 @@ namespace AnimalShelterApp.Services
                 var response = await _httpClient.PostAsJsonAsync(
                     $"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={_apiKey}",
                     request);
-                
+
                 if (response.IsSuccessStatusCode)
                 {
                     var responseContent = await response.Content.ReadFromJsonAsync<JsonElement>();
                     var idToken = responseContent.GetProperty("idToken").GetString();
                     var uid = responseContent.GetProperty("localId").GetString();
-                    
+
                     // Store the token
                     _token = idToken;
-                    
+
                     // Get the user profile from Firestore
                     _currentUser = await _firestoreService.GetUserProfileAsync(uid, _token);
-                    
+
                     // Notify subscribers that auth state has changed
                     OnAuthStateChanged?.Invoke();
-                    
+
                     return _currentUser != null;
                 }
                 else
@@ -120,7 +120,7 @@ namespace AnimalShelterApp.Services
                         var responseContent = await response.Content.ReadFromJsonAsync<JsonElement>();
                         var idToken = responseContent.GetProperty("idToken").GetString();
                         var uid = responseContent.GetProperty("localId").GetString();
-                        
+
                         Console.WriteLine($"Registration successful. Got UID: {uid}");
                         _token = idToken;
 
@@ -131,17 +131,17 @@ namespace AnimalShelterApp.Services
                             Name = shelterName,
                             Address = shelterAddress
                         };
-                        
+
                         Console.WriteLine($"Attempting to create shelter with ID: {newShelter.Id}");
                         // Add the shelter to Firestore
                         var shelterCreated = await _firestoreService.CreateShelterAsync(newShelter, _token);
-                        
+
                         if (!shelterCreated)
                         {
                             Console.WriteLine("Failed to create shelter");
                             return false;
                         }
-                        
+
                         // Create a user profile
                         _currentUser = new UserProfile
                         {
@@ -150,20 +150,20 @@ namespace AnimalShelterApp.Services
                             DisplayName = displayName,
                             ShelterId = newShelter.Id
                         };
-                        
+
                         Console.WriteLine($"Attempting to create user profile for UID: {uid}");
                         // Add the user profile to Firestore
                         var profileCreated = await _firestoreService.CreateUserProfileAsync(_currentUser, _token);
-                        
+
                         if (!profileCreated)
                         {
                             Console.WriteLine("Failed to create user profile");
                             return false;
                         }
-                        
+
                         // Notify subscribers that auth state has changed
                         OnAuthStateChanged?.Invoke();
-                        
+
                         return true;
                     }
                     catch (Exception ex)
@@ -175,7 +175,7 @@ namespace AnimalShelterApp.Services
                 else
                 {
                     var error = await response.Content.ReadFromJsonAsync<JsonElement>();
-                    
+
                     // Log more detailed error information
                     string errorMessage = "Unknown error";
                     if (error.TryGetProperty("error", out JsonElement errorDetails))
@@ -185,10 +185,10 @@ namespace AnimalShelterApp.Services
                             errorMessage = message.GetString() ?? "Unknown error";
                         }
                     }
-                    
+
                     Console.WriteLine($"Registration failed: {errorMessage}");
                     Console.WriteLine($"Full error details: {error}");
-                    
+
                     return false;
                 }
             }
