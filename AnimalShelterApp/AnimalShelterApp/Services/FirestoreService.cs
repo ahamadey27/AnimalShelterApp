@@ -545,5 +545,25 @@ public async Task<string?> UploadAnimalPhotoAsync(string shelterId, string anima
 
         return fields;
     }
+
+    public async Task<string> AddAnimalAsync(string shelterId, Animal animal, string authToken)
+    {
+        var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/animals";
+        var content = new { fields = BuildAnimalFields(animal) };
+
+        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = JsonContent.Create(content)
+        };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+
+        var response = await _httpClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+
+        var responseBody = await response.Content.ReadFromJsonAsync<JsonElement>();
+        string newId = responseBody.GetProperty("name").GetString().Split('/').Last();
+
+        return newId;
+    }
     }
 }

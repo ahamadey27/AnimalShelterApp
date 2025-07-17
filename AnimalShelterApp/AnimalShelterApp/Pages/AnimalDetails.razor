@@ -82,6 +82,11 @@ else
         <button class="btn btn-secondary" @onclick="NavigateToList">Back to List</button>
         <button class="btn btn-primary" @onclick="() => NavigateToEdit(animal.Id)">Edit</button>
     </div>
+
+    <div class="d-flex gap-2 mb-3">
+        <button class="btn btn-success" @onclick="NavigateToAddAnimalManual">Add Animal (Manual)</button>
+        <button class="btn btn-info" @onclick="AddAnimalAuto">Add Animal (Auto)</button>
+    </div>
 }
 
 <style>
@@ -161,5 +166,30 @@ else
     private void NavigateToEdit(string id)
     {
         NavigationManager.NavigateTo($"/animals/edit/{id}");
+    }
+
+    private void NavigateToAddAnimalManual()
+    {
+        NavigationManager.NavigateTo("/animals/add");
+    }
+
+    private async Task AddAnimalAuto()
+    {
+        var newAnimal = new Animal
+        {
+            Name = "Auto-" + Guid.NewGuid().ToString().Substring(0, 8),
+            Species = "Unknown",
+            Breed = "Unknown",
+            DateOfBirth = DateTime.Today,
+            IsActive = true
+            // Add other default fields as needed
+        };
+
+        // Save to Firestore (adjust for your service)
+        var shelterId = AuthService.CurrentUser.ShelterId;
+        var createdId = await FirestoreService.AddAnimalAsync(shelterId, newAnimal, AuthService.Token);
+
+        // Redirect to details or edit page for the new animal
+        NavigationManager.NavigateTo($"/animals/{createdId}");
     }
 }
