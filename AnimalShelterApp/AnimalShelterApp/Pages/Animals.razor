@@ -35,41 +35,92 @@ else
         </button>
     </div>
     
-    <div class="row row-cols-1 row-cols-md-3 g-4">
-        @foreach (var animal in animals)
-        {
-            <div class="col">
-                <div class="card h-100">
-                    <div class="card-img-container">
-                        @if (!string.IsNullOrEmpty(animal.PhotoUrl))
-                        {
-                            <img src="@animal.PhotoUrl" class="card-img-top animal-card-img" alt="@animal.Name">
-                        }
-                        else
-                        {
-                            <div class="card-img-placeholder d-flex justify-content-center align-items-center">
-                                <span class="oi oi-image text-muted" style="font-size: 3rem;"></span>
-                            </div>
-                        }
-                    </div>
-                    <div class="card-body">
-                        <h5 class="card-title">@animal.Name</h5>
-                        <p class="card-text"><strong>Species:</strong> @animal.Species</p>
-                        <p class="card-text"><strong>Breed:</strong> @animal.Breed</p>
-                        <p class="card-text"><strong>Age:</strong> @GetAnimalAge(animal)</p>
-                    </div>
-                    <div class="card-footer d-flex justify-content-between">
-                        <button class="btn btn-outline-primary btn-sm" @onclick="() => NavigateToAnimalDetails(animal.Id)">
-                            Details
-                        </button>
-                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => NavigateToEditAnimal(animal.Id)">
-                            Edit
-                        </button>
+    <div class="d-flex justify-content-end mb-2">
+        <button class="btn btn-outline-secondary" @onclick="ToggleView" title="Toggle View">
+            @if (isRowView)
+            {
+                <i class="bi bi-grid"></i> <!-- Grid icon for column view -->
+            }
+            else
+            {
+                <i class="bi bi-list"></i> <!-- List icon for row view -->
+            }
+        </button>
+    </div>
+
+    @if (isRowView)
+    {
+        <div class="row row-cols-1 g-4">
+            @foreach (var animal in animals)
+            {
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-img-container">
+                            @if (!string.IsNullOrEmpty(animal.PhotoUrl))
+                            {
+                                <img src="@animal.PhotoUrl" class="card-img-top animal-card-img" alt="@animal.Name">
+                            }
+                            else
+                            {
+                                <div class="card-img-placeholder d-flex justify-content-center align-items-center">
+                                    <span class="oi oi-image text-muted" style="font-size: 3rem;"></span>
+                                </div>
+                            }
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">@animal.Name</h5>
+                            <p class="card-text"><strong>Species:</strong> @animal.Species</p>
+                            <p class="card-text"><strong>Breed:</strong> @animal.Breed</p>
+                            <p class="card-text"><strong>Age:</strong> @GetAnimalAge(animal)</p>
+                        </div>
+                        <div class="card-footer d-flex justify-content-between">
+                            <button class="btn btn-outline-primary btn-sm" @onclick="() => NavigateToAnimalDetails(animal.Id)">
+                                Details
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => NavigateToEditAnimal(animal.Id)">
+                                Edit
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        }
-    </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Species</th>
+                        <th>Breed</th>
+                        <th>Age</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var animal in animals)
+                    {
+                        <tr>
+                            <td>@animal.Name</td>
+                            <td>@animal.Species</td>
+                            <td>@animal.Breed</td>
+                            <td>@GetAnimalAge(animal)</td>
+                            <td class="text-end">
+                                <button class="btn btn-outline-primary btn-sm" @onclick="() => NavigateToAnimalDetails(animal.Id)">
+                                    Details
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => NavigateToEditAnimal(animal.Id)">
+                                    Edit
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 }
 
 <style>
@@ -93,6 +144,7 @@ else
 @code {
     private List<Animal>? animals;
     private bool isLoading = true;
+    private bool isRowView = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -163,5 +215,10 @@ else
     private void NavigateToAnimalDetails(string animalId)
     {
         NavigationManager.NavigateTo($"/animals/{animalId}");
+    }
+
+    private void ToggleView()
+    {
+        isRowView = !isRowView;
     }
 }

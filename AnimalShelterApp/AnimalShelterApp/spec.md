@@ -78,9 +78,9 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 
 
 #### Step 2.1: AnimalDetails View Toggle Functionality
-- [ ] Add a toggle mechanism to switch between:
-    - [ ] Current column view
-    - [ ] New row view
+- [x] Add a toggle mechanism to switch between:
+    - [x] Current column view
+    - [x] New row view
 
 **Row View Specifications**
 - [ ] Display each animal in a compact row format with the following layout:
