@@ -63,6 +63,20 @@ else
             
             <div class="col-md-8">
                 <div class="mb-3">
+                    <label for="animalId" class="form-label">Animal ID</label>
+                    <div class="input-group">
+                        <InputText id="animalId" @bind-Value="manualId" class="form-control" placeholder="Enter animal ID manually" disabled="@autoAssignId" />
+                        <span class="input-group-text">
+                            <InputCheckbox id="autoAssignId" @bind-Value="autoAssignId" class="form-check-input" />
+                            <label class="form-check-label ms-2" for="autoAssignId">Auto Assign</label>
+                        </span>
+                    </div>
+                    @if (idExistsWarning)
+                    {
+                        <div class="text-warning mt-1">This animal ID already exists. Please choose a different ID.</div>
+                    }
+                </div>
+                <div class="mb-3">
                     <label for="name" class="form-label">Name</label>
                     <InputText id="name" @bind-Value="animal.Name" class="form-control" placeholder="Enter animal name" />
                     <ValidationMessage For="@(() => animal.Name)" />
@@ -147,6 +161,9 @@ else
     public string? AnimalId { get; set; }
     
     private Animal animal = new();
+    private string manualId = "";
+    private bool autoAssignId = true;
+    private bool idExistsWarning = false;
     private bool isLoading = true;
     private bool isSaving = false;
     private bool IsEditMode => !string.IsNullOrEmpty(AnimalId);
@@ -185,7 +202,9 @@ else
         else
         {
             // Add mode
-            animal = new Animal { Id = Guid.NewGuid().ToString(), IsActive = true, Name = "", Species = "", Breed = "", PhotoUrl = "" };
+            autoAssignId = true;
+            manualId = "";
+            animal = new Animal { Id = "", IsActive = true, Name = "", Species = "", Breed = "", PhotoUrl = "" };
         }
     }
 
@@ -222,6 +241,30 @@ else
             }
         }
 
+        // Assign ID based on manual/auto selection
+        if (string.IsNullOrEmpty(AnimalId))
+        {
+            if (autoAssignId)
+            {
+                animal.Id = Guid.NewGuid().ToString("N").Substring(0, 8);
+            }
+            else
+            {
+                animal.Id = manualId.Trim();
+                // Check for duplicate ID
+                var existing = await FirestoreService.GetAnimalAsync(AuthService.CurrentUser.ShelterId, animal.Id, AuthService.Token);
+                if (existing != null)
+                {
+                    idExistsWarning = true;
+                    errorMessage = "This animal ID already exists. Please choose a different ID.";
+                    return;
+                }
+                else
+                {
+                    idExistsWarning = false;
+                }
+            }
+        }
         // 2. Create or Update the animal document
         bool success;
         if (string.IsNullOrEmpty(AnimalId))
