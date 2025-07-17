@@ -83,14 +83,14 @@ This roadmap breaks the project into six distinct phases, each with actionable s
     - [x] New row view
 
 **Row View Specifications**
-- [ ] Display each animal in a compact row format with the following layout:
-    - [ ] Small photo of the pet (left-aligned)
-    - [ ] Animal ID (to be added later)
-    - [ ] Name
-    - [ ] Species
-    - [ ] Breed
-    - [ ] Date of Birth
-- [ ] Ensure row items have minimal vertical spacing for a condensed layout.
+- [x] Display each animal in a compact row format with the following layout:
+    - [x] Small photo of the pet (left-aligned)
+    - [x] Animal ID (to be added later)
+    - [x] Name
+    - [x] Species
+    - [x] Breed
+    - [x] Date of Birth
+- [x] Ensure row items have minimal vertical spacing for a condensed layout.
 
 **Column View Adjustments**
 - [ ] Organize and allow sorting by the following attributes:
