@@ -70,10 +70,35 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] On sign-up, create a new `Shelter` document and a `UserProfile` document, linking the user to their new shelter.
 - [x] Create a central `AuthService` in C# to manage user state across the app.
 
+
 ### Step 2: Animal Management (CRUD)
 - [x] Create a page to display a list of all animals in the user's shelter.
 - [x] Build a form (as a reusable component) for adding and editing an animal.
 - [x] Integrate with Firebase Storage to handle photo uploads.
+
+
+#### Step 2.1: AnimalDetails View Toggle Functionality
+- [ ] Add a toggle mechanism to switch between:
+    - [ ] Current column view
+    - [ ] New row view
+
+**Row View Specifications**
+- [ ] Display each animal in a compact row format with the following layout:
+    - [ ] Small photo of the pet (left-aligned)
+    - [ ] Animal ID (to be added later)
+    - [ ] Name
+    - [ ] Species
+    - [ ] Breed
+    - [ ] Date of Birth
+- [ ] Ensure row items have minimal vertical spacing for a condensed layout.
+
+**Column View Adjustments**
+- [ ] Organize and allow sorting by the following attributes:
+    - [ ] Name
+    - [ ] Species
+    - [ ] Breed
+    - [ ] Date of Birth
+- [ ] Maintain the current styling unless otherwise specified.
 
 ### Step 3: Medication & Scheduling
 - [ ] Create a simple UI to manage a list of common medications for the shelter.
