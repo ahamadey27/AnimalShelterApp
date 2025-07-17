@@ -76,6 +76,7 @@ else
                         <div class="text-warning mt-1">This animal ID already exists. Please choose a different ID.</div>
                     }
                 </div>
+
                 <div class="mb-3">
                     <label for="name" class="form-label">Name</label>
                     <InputText id="name" @bind-Value="animal.Name" class="form-control" placeholder="Enter animal name" />
@@ -159,7 +160,7 @@ else
 @code {
     [Parameter]
     public string? AnimalId { get; set; }
-    
+
     private Animal animal = new();
     private string manualId = "";
     private bool autoAssignId = true;
@@ -168,7 +169,6 @@ else
     private bool isSaving = false;
     private bool IsEditMode => !string.IsNullOrEmpty(AnimalId);
     private string? uploadError;
-    private IBrowserFile? selectedFile;
     private IBrowserFile? selectedPhoto;
     private string? photoPreviewUrl;
     private string? errorMessage;
@@ -177,7 +177,6 @@ else
     {
         if (AuthService.CurrentUser == null || string.IsNullOrEmpty(AuthService.Token))
         {
-            // Use the current URI for the redirect to handle both add and edit modes correctly
             var redirectUri = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
             NavigationManager.NavigateTo($"/login?redirectUri={Uri.EscapeDataString(redirectUri)}");
             return;
@@ -192,6 +191,11 @@ else
                 if (animal == null)
                 {
                     errorMessage = "Could not find the specified animal.";
+                }
+                else
+                {
+                    autoAssignId = false;
+                    manualId = animal.Id;
                 }
             }
             else
@@ -208,6 +212,12 @@ else
         }
     }
 
+    private async Task CheckIfAnimalExists(ChangeEventArgs e)
+    {
+        var enteredId = e.Value?.ToString();
+        // No longer needed: animalIdExists logic removed. Duplicate ID is checked in HandleValidSubmit.
+    }
+
     private async Task HandleValidSubmit()
     {
         errorMessage = null; // Clear previous errors
@@ -215,30 +225,6 @@ else
         {
             errorMessage = "Cannot save animal. User or shelter information is missing.";
             return;
-        }
-
-        // 1. Handle photo upload first
-        if (selectedPhoto != null)
-        {
-            // 5MB limit for photos
-            using var stream = selectedPhoto.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
-            var photoUrl = await FirestoreService.UploadAnimalPhotoAsync(
-                AuthService.CurrentUser.ShelterId,
-                animal.Id,
-                stream,
-                selectedPhoto.Name, // Pass the filename
-                selectedPhoto.ContentType,
-                AuthService.Token);
-
-            if (photoUrl != null)
-            {
-                animal.PhotoUrl = photoUrl;
-            }
-            else
-            {
-                errorMessage = "Failed to upload photo. Please try again.";
-                return; // Stop if photo upload fails
-            }
         }
 
         // Assign ID based on manual/auto selection
@@ -265,6 +251,30 @@ else
                 }
             }
         }
+        // 1. Handle photo upload first
+        if (selectedPhoto != null)
+        {
+            // 5MB limit for photos
+            using var stream = selectedPhoto.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+            var photoUrl = await FirestoreService.UploadAnimalPhotoAsync(
+                AuthService.CurrentUser.ShelterId,
+                animal.Id,
+                stream,
+                selectedPhoto.Name, // Pass the filename
+                selectedPhoto.ContentType,
+                AuthService.Token);
+
+            if (photoUrl != null)
+            {
+                animal.PhotoUrl = photoUrl;
+            }
+            else
+            {
+                errorMessage = "Failed to upload photo. Please try again.";
+                return; // Stop if photo upload fails
+            }
+        }
+
         // 2. Create or Update the animal document
         bool success;
         if (string.IsNullOrEmpty(AnimalId))
@@ -291,35 +301,36 @@ else
     private async Task HandlePhotoSelected(InputFileChangeEventArgs e)
     {
         selectedPhoto = e.File;
-        if (selectedPhoto != null)
+        // Clear any previous upload errors
+        uploadError = null;
+        
+        // Validate file
+        if (selectedPhoto.Size > 5 * 1024 * 1024)
         {
-            // Generate a preview URL
-            photoPreviewUrl = null; // Clear previous preview
+            uploadError = "The selected photo exceeds the maximum size of 5MB.";
+            return;
+        }
+        
+        // Preview the selected photo
+        try
+        {
             var format = "image/jpeg";
-            if(selectedPhoto.ContentType == "image/png") format = "image/png";
-
-            try
-            {
-                var imageFile = await selectedPhoto.RequestImageFileAsync(format, 200, 200);
-                using var imageStream = imageFile.OpenReadStream(5 * 1024 * 1024); // 5MB limit
-                using var memoryStream = new MemoryStream();
-                await imageStream.CopyToAsync(memoryStream);
-                
-                photoPreviewUrl = $"data:{format};base64,{Convert.ToBase64String(memoryStream.ToArray())}";
-                StateHasChanged();
-            }
-            catch (Exception ex)
-            {
-                errorMessage = $"Error generating photo preview: {ex.Message}";
-            }
+            var resizedImageFile = await selectedPhoto.RequestImageFileAsync(format, 800, 600);
+            var buffer = new byte[resizedImageFile.Size];
+            await resizedImageFile.OpenReadStream().ReadAsync(buffer);
+            var imageDataUrl = $"data:{format};base64,{Convert.ToBase64String(buffer)}";
+            animal.PhotoUrl = imageDataUrl;
+        }
+        catch (Exception ex)
+        {
+            uploadError = "Failed to preview image: " + ex.Message;
         }
     }
-
+    
     private void RemovePhoto()
     {
-        animal.PhotoUrl = null;
-        selectedFile = null;
-        uploadError = null;
+        animal.PhotoUrl = string.Empty;
+        selectedPhoto = null;
     }
     
     private void NavigateBack()

@@ -197,7 +197,13 @@ else
 
         // Save to Firestore with custom documentId
         var shelterId = AuthService.CurrentUser.ShelterId;
-        var createdId = await FirestoreService.AddAnimalAsync(shelterId, newAnimal, AuthService.Token);
+        var success = await FirestoreService.CreateAnimalAsync(shelterId, newAnimal, AuthService.Token);
+        // Optionally check success and handle error
+        if (!success)
+        {
+            Console.WriteLine("Failed to create animal.");
+            return;
+        }
 
         // Redirect to details or edit page for the new animal
         NavigationManager.NavigateTo($"/animals/{newAnimal.Id}");

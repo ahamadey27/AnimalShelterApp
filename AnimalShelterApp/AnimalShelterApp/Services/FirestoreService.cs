@@ -437,7 +437,6 @@ namespace AnimalShelterApp.Services
     {
         try
         {
-            // Firestore API URL to update a document
             var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/animals/{animal.Id}";
             
             var content = new { fields = BuildAnimalFields(animal) };
@@ -465,6 +464,12 @@ namespace AnimalShelterApp.Services
             Console.WriteLine($"Error updating animal: {ex.Message}");
             return false;
         }
+    }
+
+    public async Task<bool> AnimalExistsAsync(string shelterId, string animalId, string authToken)
+    {
+        var animal = await GetAnimalAsync(shelterId, animalId, authToken);
+        return animal != null;
     }
 
     /// <summary>
@@ -529,12 +534,8 @@ public async Task<string?> UploadAnimalPhotoAsync(string shelterId, string anima
         }
     }
 
-    /// <summary>
-    /// Helper method to build the 'fields' object for an animal
-    /// </summary>
     private object BuildAnimalFields(Animal animal)
     {
-        // Do NOT include the Id property in Firestore fields, only use documentId for Firestore doc name
         var fields = new Dictionary<string, object>
         {
             { "name", new { stringValue = animal.Name ?? "" } },
@@ -546,34 +547,11 @@ public async Task<string?> UploadAnimalPhotoAsync(string shelterId, string anima
 
         if (animal.DateOfBirth.HasValue)
         {
-            fields["dateOfBirth"] = new { timestampValue = animal.DateOfBirth.Value.ToUniversalTime().ToString("o") };
-        }
-        else
-        {
-            fields["dateOfBirth"] = new { nullValue = (object?)null };
+            fields.Add("dateOfBirth", new { timestampValue = animal.DateOfBirth.Value.ToUniversalTime().ToString("o") });
         }
 
         return fields;
     }
-
-    public async Task<string> AddAnimalAsync(string shelterId, Animal animal, string authToken)
-    {
-        // Firestore API URL to add a new animal document with custom documentId
-        var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/animals?documentId={animal.Id}";
-        var content = new { fields = BuildAnimalFields(animal) };
-
-        var request = new HttpRequestMessage(HttpMethod.Post, url)
-        {
-            Content = JsonContent.Create(content)
-        };
-        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
-
-        var response = await _httpClient.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-
-        var responseBody = await response.Content.ReadFromJsonAsync<JsonElement>();
-        string newId = animal.Id;
-        return newId;
-    }
-    }
+   
+}
 }
