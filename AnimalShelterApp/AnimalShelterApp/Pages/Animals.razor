@@ -34,111 +34,57 @@ else
             <span class="oi oi-plus" aria-hidden="true"></span> Add Animal
         </button>
     </div>
-    
-    <div class="d-flex justify-content-end mb-2">
-        <button class="btn btn-outline-secondary" @onclick="ToggleView" title="Toggle View">
-            @if (isRowView)
-            {
-                <i class="bi bi-grid"></i> <!-- Grid icon for column view -->
-            }
-            else
-            {
-                <i class="bi bi-list"></i> <!-- List icon for row view -->
-            }
-        </button>
-    </div>
 
-    @if (isRowView)
-    {
-        <div class="row row-cols-1 g-4">
-            @foreach (var animal in animals)
-            {
-                <div class="col">
-                    <div class="card h-100">
-                        <div class="card-img-container">
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead>
+                <tr>
+                    <th></th> <!-- Photo -->
+                    <th>Animal ID</th>
+                    <th>Name</th>
+                    <th>Species</th>
+                    <th>Breed</th>
+                    <th>Date of Birth</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var animal in animals)
+                {
+                    <tr>
+                        <td style="width:48px;">
                             @if (!string.IsNullOrEmpty(animal.PhotoUrl))
                             {
-                                <img src="@animal.PhotoUrl" class="card-img-top animal-card-img" alt="@animal.Name">
+                                <img src="@animal.PhotoUrl" class="img-thumbnail" style="width:40px; height:40px; object-fit:cover;" alt="@animal.Name" />
                             }
                             else
                             {
-                                <div class="card-img-placeholder d-flex justify-content-center align-items-center">
-                                    <span class="oi oi-image text-muted" style="font-size: 3rem;"></span>
-                                </div>
+                                <span class="oi oi-image text-muted" style="font-size:2rem;"></span>
                             }
-                        </div>
-                        <div class="card-body">
-                            <h5 class="card-title">@animal.Name</h5>
-                            <p class="card-text"><strong>Species:</strong> @animal.Species</p>
-                            <p class="card-text"><strong>Breed:</strong> @animal.Breed</p>
-                            <p class="card-text"><strong>Age:</strong> @GetAnimalAge(animal)</p>
-                        </div>
-                        <div class="card-footer d-flex justify-content-between">
-                            <button class="btn btn-outline-primary btn-sm" @onclick="() => NavigateToAnimalDetails(animal.Id)">
-                                Details
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => NavigateToEditAnimal(animal.Id)">
-                                Edit
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            }
-        </div>
-    }
-    else
-    {
-        <div class="table-responsive">
-            <table class="table table-sm align-middle">
-                <thead>
-                    <tr>
-                        <th></th> <!-- Photo -->
-                        <th>Animal ID</th>
-                        <th>Name</th>
-                        <th>Species</th>
-                        <th>Breed</th>
-                        <th>Date of Birth</th>
-                        <th class="text-end">Actions</th>
+                        </td>
+                        <td>@animal.Id</td>
+                        <td>@animal.Name</td>
+                        <td>@animal.Species</td>
+                        <td>@animal.Breed</td>
+                        <td>
+                            @if (animal.DateOfBirth.HasValue)
+                            {
+                                @animal.DateOfBirth.Value.ToString("yyyy-MM-dd")
+                            }
+                            else
+                            {
+                                <span class="text-muted">Unknown</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-outline-primary btn-sm" @onclick="() => NavigateToAnimalDetails(animal.Id)">Details</button>
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => NavigateToEditAnimal(animal.Id)">Edit</button>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    @foreach (var animal in animals)
-                    {
-                        <tr>
-                            <td style="width:48px;">
-                                @if (!string.IsNullOrEmpty(animal.PhotoUrl))
-                                {
-                                    <img src="@animal.PhotoUrl" class="img-thumbnail" style="width:40px; height:40px; object-fit:cover;" alt="@animal.Name" />
-                                }
-                                else
-                                {
-                                    <span class="oi oi-image text-muted" style="font-size:2rem;"></span>
-                                }
-                            </td>
-                            <td>@animal.Id</td>
-                            <td>@animal.Name</td>
-                            <td>@animal.Species</td>
-                            <td>@animal.Breed</td>
-                            <td>
-                                @if (animal.DateOfBirth.HasValue)
-                                {
-                                    @animal.DateOfBirth.Value.ToString("yyyy-MM-dd")
-                                }
-                                else
-                                {
-                                    <span class="text-muted">Unknown</span>
-                                }
-                            </td>
-                            <td class="text-end">
-                                <button class="btn btn-outline-primary btn-sm" @onclick="() => NavigateToAnimalDetails(animal.Id)">Details</button>
-                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => NavigateToEditAnimal(animal.Id)">Edit</button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
+                }
+            </tbody>
+        </table>
+    </div>
 }
 
 <style>
@@ -146,13 +92,11 @@ else
         height: 200px;
         overflow: hidden;
     }
-    
     .animal-card-img {
         width: 100%;
         height: 200px;
         object-fit: cover;
     }
-    
     .card-img-placeholder {
         height: 200px;
         background-color: #f8f9fa;
@@ -162,7 +106,6 @@ else
 @code {
     private List<Animal>? animals;
     private bool isLoading = true;
-    private bool isRowView = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -190,9 +133,7 @@ else
             }
             else
             {
-                // Handle case where user has no shelter ID, maybe show a message
                 animals = new List<Animal>();
-                // Optionally, you could add a message to the user here.
             }
         }
         finally
@@ -207,36 +148,30 @@ else
         {
             return "Unknown";
         }
-        
+
         var today = DateTime.Today;
         var age = today.Year - animal.DateOfBirth.Value.Year;
-        
-        // Adjust for the month/day if birthday hasn't occurred yet this year
+
         if (animal.DateOfBirth.Value.Date > today.AddYears(-age))
         {
             age--;
         }
-        
+
         return $"{age} year{(age == 1 ? "" : "s")}";
     }
-    
+
     private void NavigateToAddAnimal()
     {
         NavigationManager.NavigateTo("/animals/add");
     }
-    
+
     private void NavigateToEditAnimal(string animalId)
     {
         NavigationManager.NavigateTo($"/animals/edit/{animalId}");
     }
-    
+
     private void NavigateToAnimalDetails(string animalId)
     {
         NavigationManager.NavigateTo($"/animals/{animalId}");
-    }
-
-    private void ToggleView()
-    {
-        isRowView = !isRowView;
     }
 }
