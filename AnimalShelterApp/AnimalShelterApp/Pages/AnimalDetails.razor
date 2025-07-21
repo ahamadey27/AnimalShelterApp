@@ -5,6 +5,8 @@
 @inject NavigationManager NavigationManager
 @inject FirestoreService FirestoreService
 
+@inject IJSRuntime JSRuntime
+
 <h3>Animal Details</h3>
 
 @if (isLoading)
@@ -87,6 +89,8 @@ else
         <button class="btn btn-success" @onclick="NavigateToAddAnimalManual">Add Animal (Manual)</button>
         <button class="btn btn-info" @onclick="AddAnimalAuto">Add Animal (Auto)</button>
     </div>
+
+    <button class="btn btn-danger" @onclick="DeleteAnimal">Delete</button>
 }
 
 <style>
@@ -207,5 +211,24 @@ else
 
         // Redirect to details or edit page for the new animal
         NavigationManager.NavigateTo($"/animals/{newAnimal.Id}");
+    }
+
+    private async Task DeleteAnimal()
+    {
+        if (AuthService.CurrentUser == null || string.IsNullOrEmpty(AuthService.CurrentUser.ShelterId) || string.IsNullOrEmpty(AuthService.Token) || animal == null)
+            return;
+
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete this animal?");
+        if (!confirmed) return;
+
+        var success = await FirestoreService.DeleteAnimalAsync(AuthService.CurrentUser.ShelterId, animal.Id, AuthService.Token);
+        if (success)
+        {
+            NavigationManager.NavigateTo("/animals");
+        }
+        else
+        {
+            // Optionally show an error message
+        }
     }
 }
