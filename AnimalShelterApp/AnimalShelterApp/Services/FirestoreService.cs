@@ -260,6 +260,9 @@ namespace AnimalShelterApp.Services
                                 Breed = fields.TryGetProperty("breed", out var breedField) 
                                     ? breedField.GetProperty("stringValue").GetString() ?? string.Empty 
                                     : string.Empty,
+                                Color = fields.TryGetProperty("color", out var colorField)
+                                    ? colorField.GetProperty("stringValue").GetString() ?? string.Empty
+                                    : string.Empty,
                                 PhotoUrl = fields.TryGetProperty("photoUrl", out var photoField) 
                                     ? photoField.GetProperty("stringValue").GetString() ?? string.Empty 
                                     : string.Empty,
@@ -552,6 +555,7 @@ public async Task<string?> UploadAnimalPhotoAsync(string shelterId, string anima
             { "name", new { stringValue = animal.Name ?? "" } },
             { "species", new { stringValue = animal.Species ?? "" } },
             { "breed", new { stringValue = animal.Breed ?? "" } },
+            {"color", new {stringValue = animal.Color ?? ""}},
             { "photoUrl", new { stringValue = animal.PhotoUrl ?? "" } },
             { "isActive", new { booleanValue = animal.IsActive } }
         };

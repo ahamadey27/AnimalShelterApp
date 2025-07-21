@@ -94,6 +94,12 @@ else
                         <InputText id="breed" @bind-Value="animal.Breed" class="form-control" placeholder="Labrador, Siamese, etc." />
                         <ValidationMessage For="@(() => animal.Breed)" />
                     </div>
+                    <div class="mb-3"></div>
+                         <label for="color" class="form-label">Color</label>
+                        <InputText id="color" @bind-Value="animal.Color" class="form-control" placeholder="Enter animal color" />
+                        <ValidationMessage For="@(() => animal.Color)" />
+                    </div>
+                    
                 </div>
                 
                 <div class="mb-3">
