@@ -466,11 +466,22 @@ namespace AnimalShelterApp.Services
         }
     }
 
-    public async Task<bool> AnimalExistsAsync(string shelterId, string animalId, string authToken)
-    {
-        var animal = await GetAnimalAsync(shelterId, animalId, authToken);
-        return animal != null;
-    }
+        public async Task<bool> DeleteAnimalAsync(string shelterId, string animalId, string authToken)
+        {
+            var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/animals/{animalId}";
+            var request = new HttpRequestMessage(HttpMethod.Delete, url);
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+
+            var response = await _httpClient.SendAsync(request);
+            return response.IsSuccessStatusCode;
+        }
+
+
+        public async Task<bool> AnimalExistsAsync(string shelterId, string animalId, string authToken)
+        {
+            var animal = await GetAnimalAsync(shelterId, animalId, authToken);
+            return animal != null;
+        }
 
     /// <summary>
     /// Uploads a photo to Firebase Storage and returns the public URL
