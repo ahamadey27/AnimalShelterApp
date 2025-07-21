@@ -1,0 +1,110 @@
+@page "/medications"
+@using AnimalShelterApp.Shared
+@inject FirestoreService FirestoreService
+@inject AuthService AuthService
+
+<h3>Medications</h3>
+
+@if (isLoading)
+{
+    <p>Loading medications...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Default Dosage</th>
+                <th>Instructions</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var med in medications)
+            {
+                <tr>
+                    <td>@med.Name</td>
+                    <td>@med.DefaultDosage</td>
+                    <td>@med.Instructions</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => EditMedication(med)">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteMedication(med.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h5>@(editingMedication == null ? "Add Medication" : "Edit Medication")</h5>
+    <EditForm Model="editingMedication" OnValidSubmit="SaveMedication">
+        <InputText @bind-Value="editingMedication.Name" class="form-control" placeholder="Name" />
+        <InputText @bind-Value="editingMedication.DefaultDosage" class="form-control" placeholder="Default Dosage" />
+        <InputText @bind-Value="editingMedication.Instructions" class="form-control" placeholder="Instructions" />
+        <button class="btn btn-success mt-2" type="submit">Save</button>
+        @if (editingMedication != null)
+        {
+            <button class="btn btn-secondary mt-2 ms-2" type="button" @onclick="CancelEdit">Cancel</button>
+        }
+    </EditForm>
+}
+
+@code {
+    private List<Medication> medications = new();
+    private Medication editingMedication = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMedications();
+    }
+
+    private async Task LoadMedications()
+    {
+        isLoading = true;
+        if (AuthService.CurrentUser?.ShelterId != null)
+        {
+            medications = await FirestoreService.GetMedicationsAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
+        }
+        isLoading = false;
+        editingMedication = new Medication();
+    }
+
+    private void EditMedication(Medication med)
+    {
+        editingMedication = new Medication
+        {
+            Id = med.Id,
+            Name = med.Name,
+            DefaultDosage = med.DefaultDosage,
+            Instructions = med.Instructions
+        };
+    }
+
+    private async Task SaveMedication()
+    {
+        if (string.IsNullOrWhiteSpace(editingMedication.Id))
+        {
+            // New medication
+            editingMedication.Id = Guid.NewGuid().ToString("N").Substring(0, 8);
+            await FirestoreService.CreateMedicationAsync(AuthService.CurrentUser.ShelterId, editingMedication, AuthService.Token);
+        }
+        else
+        {
+            // Update
+            await FirestoreService.UpdateMedicationAsync(AuthService.CurrentUser.ShelterId, editingMedication, AuthService.Token);
+        }
+        await LoadMedications();
+    }
+
+    private async Task DeleteMedication(string id)
+    {
+        await FirestoreService.DeleteMedicationAsync(AuthService.CurrentUser.ShelterId, id, AuthService.Token);
+        await LoadMedications();
+    }
+
+    private void CancelEdit()
+    {
+        editingMedication = new Medication();
+    }
+}
