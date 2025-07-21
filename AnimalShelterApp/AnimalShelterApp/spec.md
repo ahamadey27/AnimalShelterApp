@@ -93,12 +93,13 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] Ensure row items have minimal vertical spacing for a condensed layout.
 
 **Column View Adjustments**
-- [ ] Organize and allow sorting by the following attributes:
-    - [ ] Name
-    - [ ] Species
-    - [ ] Breed
-    - [ ] Date of Birth
-- [ ] Maintain the current styling unless otherwise specified.
+- [x] Organize and allow sorting by the following attributes:
+    - [x] Name
+    - [x] Species
+    - [x] Breed
+    - [x] Color
+    - [x] Date of Birth
+- [x] Maintain the current styling unless otherwise specified.
 
 ### Step 3: Medication & Scheduling
 - [ ] Create a simple UI to manage a list of common medications for the shelter.
