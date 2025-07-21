@@ -26,6 +26,26 @@ namespace AnimalShelterApp.Services
             _projectId = _configuration["Firebase:projectId"] ?? string.Empty;
         }
 
+        // Helper method to build Firestore fields for Animal
+        private object BuildAnimalFields(Animal animal)
+        {
+            var fields = new Dictionary<string, object>
+            {
+                { "name", new { stringValue = animal.Name ?? "" } },
+                { "species", new { stringValue = animal.Species ?? "" } },
+                { "breed", new { stringValue = animal.Breed ?? "" } },
+                {"color", new {stringValue = animal.Color ?? ""}},
+                { "photoUrl", new { stringValue = animal.PhotoUrl ?? "" } },
+                { "isActive", new { booleanValue = animal.IsActive } }
+            };
+
+            if (animal.DateOfBirth.HasValue)
+            {
+                fields.Add("dateOfBirth", new { timestampValue = animal.DateOfBirth.Value.ToUniversalTime().ToString("o") });
+            }
+
+            return fields;
+        }
         /// <summary>
         /// Creates a new shelter document in Firestore
         /// </summary>
