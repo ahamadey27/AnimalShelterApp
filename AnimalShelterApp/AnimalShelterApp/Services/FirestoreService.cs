@@ -548,9 +548,15 @@ public async Task<string?> UploadAnimalPhotoAsync(string shelterId, string anima
         }
     }
 
-    private object BuildAnimalFields(Animal animal)
-    {
-        var fields = new Dictionary<string, object>
+public async Task<List<Medication>> GetMedicationsAsync(string shelterId, string token) { /* ... */ }
+public async Task<bool> CreateMedicationAsync(string shelterId, Medication med, string token) { /* ... */ }
+public async Task<bool> UpdateMedicationAsync(string shelterId, Medication med, string token) { /* ... */ }
+public async Task<bool> DeleteMedicationAsync(string shelterId, string medId, string token) { /* ... */ }
+
+
+        private object BuildAnimalFields(Animal animal)
+        {
+            var fields = new Dictionary<string, object>
         {
             { "name", new { stringValue = animal.Name ?? "" } },
             { "species", new { stringValue = animal.Species ?? "" } },
@@ -560,13 +566,13 @@ public async Task<string?> UploadAnimalPhotoAsync(string shelterId, string anima
             { "isActive", new { booleanValue = animal.IsActive } }
         };
 
-        if (animal.DateOfBirth.HasValue)
-        {
-            fields.Add("dateOfBirth", new { timestampValue = animal.DateOfBirth.Value.ToUniversalTime().ToString("o") });
-        }
+            if (animal.DateOfBirth.HasValue)
+            {
+                fields.Add("dateOfBirth", new { timestampValue = animal.DateOfBirth.Value.ToUniversalTime().ToString("o") });
+            }
 
-        return fields;
-    }
+            return fields;
+        }
    
 }
 }
