@@ -18,6 +18,9 @@ namespace AnimalShelterApp.Shared
         // The species of the animal (e.g., "Dog", "Cat", "Rabbit").
         public string Species { get; set; }
 
+        //Animal color
+        public string Color { get; set; } = string.Empty;
+
         // The specific breed of the animal (e.g., "Labrador Retriever", "Domestic Shorthair").
         public string Breed { get; set; }
 
