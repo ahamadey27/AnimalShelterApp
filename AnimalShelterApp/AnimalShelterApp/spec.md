@@ -102,7 +102,7 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] Maintain the current styling unless otherwise specified.
 
 ### Step 3: Medication & Scheduling
-- [ ] Create a simple UI to manage a list of common medications for the shelter.
+- [x] Create a simple UI to manage a list of common medications for the shelter.
 - [ ] On the "Animal Detail" page, build the UI to schedule medications. This will create `ScheduledDose` documents in Firestore.
 
 ### Step 4: The Dashboard & Core Logging Workflow
