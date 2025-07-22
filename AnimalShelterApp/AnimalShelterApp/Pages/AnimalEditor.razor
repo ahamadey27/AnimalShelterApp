@@ -8,6 +8,7 @@
 @inject NavigationManager NavigationManager
 @inject FirestoreService FirestoreService
 @inject IJSRuntime JSRuntime
+@inject HttpClient Http
 
 <h3>@(string.IsNullOrEmpty(AnimalId) ? "Add New Animal" : "Edit Animal")</h3>
 
@@ -86,12 +87,24 @@ else
                 <div class="row mb-3">
                     <div class="col">
                         <label for="species" class="form-label">Species</label>
-                        <InputText id="species" @bind-Value="animal.Species" class="form-control" placeholder="Dog, Cat, etc." />
+                        <input id="species" list="species-list" @bind="animal.Species" @bind:event="oninput" @onchange="() => UpdateBreedSuggestions(animal.Species)" class="form-control" />
+                        <datalist id="species-list">
+                            @foreach (var species in speciesSuggestions)
+                            {
+                                <option value="@species"></option>
+                            }
+                        </datalist>
                         <ValidationMessage For="@(() => animal.Species)" />
                     </div>
                     <div class="col">
                         <label for="breed" class="form-label">Breed</label>
-                        <InputText id="breed" @bind-Value="animal.Breed" class="form-control" placeholder="Labrador, Siamese, etc." />
+                        <input id="breed" list="breed-list" @bind="animal.Breed" class="form-control" />
+                        <datalist id="breed-list">
+                            @foreach (var breed in breedSuggestions)
+                            {
+                                <option value="@breed"></option>
+                            }
+                        </datalist>
                         <ValidationMessage For="@(() => animal.Breed)" />
                     </div>
                     <div class="col">
@@ -177,6 +190,9 @@ else
     private IBrowserFile? selectedPhoto;
     private string? photoPreviewUrl;
     private string? errorMessage;
+    private BreedInfo? breedInfo;
+    private List<string> speciesSuggestions = new();
+    private List<string> breedSuggestions = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -215,6 +231,30 @@ else
             manualId = "";
             animal = new Animal { Id = "", IsActive = true, Name = "", Species = "", Breed = "", PhotoUrl = "" };
         }
+
+        // Load breed and species data
+        breedInfo = await Http.GetFromJsonAsync<BreedInfo>("sample-data/breeds.json");
+        if (breedInfo != null)
+        {
+            speciesSuggestions = breedInfo.Species.Select(s => s.Name).ToList();
+        }
+        
+        // When editing an animal, pre-fill the breed suggestions
+        if (animal != null && !string.IsNullOrEmpty(animal.Species))
+        {
+            UpdateBreedSuggestions(animal.Species);
+        }
+    }
+
+    private void UpdateBreedSuggestions(string speciesName)
+    {
+        breedSuggestions.Clear();
+        var speciesData = breedInfo?.Species.FirstOrDefault(s => s.Name.Equals(speciesName, StringComparison.OrdinalIgnoreCase));
+        if (speciesData != null)
+        {
+            breedSuggestions = speciesData.Breeds;
+        }
+        StateHasChanged();
     }
 
     private async Task CheckIfAnimalExists(ChangeEventArgs e)
