@@ -1,0 +1,41 @@
+﻿{
+  "species": [
+    {
+      "name": "Dog",
+      "breeds": [
+        "Labrador Retriever",
+        "German Shepherd",
+        "Golden Retriever",
+        "French Bulldog",
+        "Poodle",
+        "Beagle",
+        "Rottweiler",
+        "Siberian Husky",
+        "Dachshund"
+      ]
+    },
+    {
+      "name": "Cat",
+      "breeds": [
+        "Domestic Shorthair",
+        "Siamese",
+        "Persian",
+        "Maine Coon",
+        "Ragdoll",
+        "Bengal",
+        "Sphynx",
+        "American Shorthair"
+      ]
+    },
+    {
+      "name": "Rabbit",
+      "breeds": [
+        "Holland Lop",
+        "Mini Rex",
+        "Netherland Dwarf",
+        "Flemish Giant",
+        "Lionhead"
+      ]
+    }
+  ]
+}
