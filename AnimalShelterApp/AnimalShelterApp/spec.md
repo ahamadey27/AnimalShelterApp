@@ -105,8 +105,8 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] Sort by descending or ascending order of the following: Animal ID, Name, Breed, Color and DOB
 
 **Add autofill option for common breeds and species**
-- [ ] When user types in breed/species in Animal Editor, text box filters out available options
-- [ ] If breed/species unavailable, user can continue to type and input data
+- [x] When user types in breed/species in Animal Editor, text box filters out available options
+- [x] If breed/species unavailable, user can continue to type and input data
 
 ### Step 3: Medication & Scheduling
 - [x] Create a simple UI to manage a list of common medications for the shelter.
