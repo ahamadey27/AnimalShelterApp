@@ -46,8 +46,8 @@ else
                     <th>Name</th>
                     <th>Species</th>
                     <th>Breed</th>
-                    <th>Date of Birth</th>
                     <th>Color</th>
+                    <th>Date of Birth</th>
                     <th class="text-end">Actions</th>
                 </tr>
             </thead>
@@ -69,6 +69,8 @@ else
                         <td>@animal.Name</td>
                         <td>@animal.Species</td>
                         <td>@animal.Breed</td>
+                        <td>@animal.Color</td>
+                        
                         <td>
                             @if (animal.DateOfBirth.HasValue)
                             {
@@ -79,7 +81,7 @@ else
                                 <span class="text-muted">Unknown</span>
                             }
                         </td>
-                        <td>@animal.Color</td>
+                        
                         <td class="text-end">
                             <button class="btn btn-outline-primary btn-sm" @onclick="() => NavigateToAnimalDetails(animal.Id)">Details</button>
                             <button class="btn btn-outline-secondary btn-sm" @onclick="() => NavigateToEditAnimal(animal.Id)">Edit</button>
