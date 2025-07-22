@@ -101,6 +101,9 @@ This roadmap breaks the project into six distinct phases, each with actionable s
     - [x] Date of Birth
 - [x] Maintain the current styling unless otherwise specified.
 
+**Ability to Sort Animals by criteria in Anima View**
+- [ ] Sort by descending or ascending order of the following: 
+
 ### Step 3: Medication & Scheduling
 - [x] Create a simple UI to manage a list of common medications for the shelter.
 - [ ] On the "Animal Detail" page, build the UI to schedule medications. This will create `ScheduledDose` documents in Firestore.
