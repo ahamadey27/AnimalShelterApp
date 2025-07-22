@@ -107,6 +107,7 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 **Add autofill option for common breeds and species**
 - [x] When user types in breed/species in Animal Editor, text box filters out available options
 - [x] If breed/species unavailable, user can continue to type and input data
+- [ ] Add JSON data of species/breed
 
 ### Step 3: Medication & Scheduling
 - [x] Create a simple UI to manage a list of common medications for the shelter.
