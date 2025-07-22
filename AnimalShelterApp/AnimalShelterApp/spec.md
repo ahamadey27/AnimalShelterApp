@@ -101,8 +101,8 @@ This roadmap breaks the project into six distinct phases, each with actionable s
     - [x] Date of Birth
 - [x] Maintain the current styling unless otherwise specified.
 
-**Ability to Sort Animals by criteria in Anima View**
-- [ ] Sort by descending or ascending order of the following: 
+**Ability to Sort Animals by criteria in Animal View**
+- [ ] Sort by descending or ascending order of the following: Animal ID, Name, Breed, Color and DOB
 
 ### Step 3: Medication & Scheduling
 - [x] Create a simple UI to manage a list of common medications for the shelter.

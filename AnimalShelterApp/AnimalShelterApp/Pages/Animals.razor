@@ -42,12 +42,12 @@ else
             <thead>
                 <tr>
                     <th></th> <!-- Photo -->
-                    <th>Animal ID</th>
-                    <th>Name</th>
-                    <th>Species</th>
-                    <th>Breed</th>
-                    <th>Color</th>
-                    <th>Date of Birth</th>
+                    <th @onclick="() => SortBy('Id')">Animal ID @(SortIndicator("Id"))</th>
+                    <th @onclick="() => SortBy('Name')">Name @(SortIndicator("Name"))</th>
+                    <th @onclick="() => SortBy('Species')">Species @(SortIndicator("Species"))</th>
+                    <th @onclick="() => SortBy('Breed')">Breed @(SortIndicator("Breed"))</th>
+                    <th @onclick="() => SortBy('Color')">Color @(SortIndicator("Color"))</th>
+                    <th @onclick="() => SortBy('DateOfBirth')">Date of Birth @(SortIndicator("DateOfBirth"))</th>
                     <th class="text-end">Actions</th>
                 </tr>
             </thead>
@@ -113,7 +113,9 @@ else
 @code {
     private List<Animal>? animals;
     private bool isLoading = true;
-
+    string sortColumn = "Name";
+    bool sortDescending = false;
+ 
     protected override async Task OnInitializedAsync()
     {
         try
@@ -142,6 +144,7 @@ else
             {
                 animals = new List<Animal>();
             }
+            SortAnimals();
         }
         finally
         {
@@ -201,4 +204,33 @@ else
             // Optionally show an error message
         }
     }
+
+    void SortBy(string column)
+    {
+        if (sortColumn == column)
+            sortDescending = !sortDescending;
+        else
+        {
+            sortColumn = column;
+            sortDescending = false;
+        }
+        SortAnimals();
+    }
+
+    void SortAnimals()
+    {
+        if (animals == null) return;
+        animals = sortColumn switch
+        {
+            "Id" => (sortDescending ? animals.OrderByDescending(a => a.Id) : animals.OrderBy(a => a.Id)).ToList(),
+            "Name" => (sortDescending ? animals.OrderByDescending(a => a.Name) : animals.OrderBy(a => a.Name)).ToList(),
+            "Breed" => (sortDescending ? animals.OrderByDescending(a => a.Breed) : animals.OrderBy(a => a.Breed)).ToList(),
+            "Color" => (sortDescending ? animals.OrderByDescending(a => a.Color) : animals.OrderBy(a => a.Color)).ToList(),
+            "DateOfBirth" => (sortDescending ? animals.OrderByDescending(a => a.DateOfBirth) : animals.OrderBy(a => a.DateOfBirth)).ToList(),
+            _ => animals
+        };
+    }
+
+    string SortIndicator(string column) =>
+        sortColumn == column ? (sortDescending ? "▼" : "▲") : "";
 }
