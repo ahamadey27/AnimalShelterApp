@@ -42,12 +42,12 @@ else
             <thead>
                 <tr>
                     <th></th> <!-- Photo -->
-                    <th @onclick="() => SortBy('Id')">Animal ID @(SortIndicator("Id"))</th>
-                    <th @onclick="() => SortBy('Name')">Name @(SortIndicator("Name"))</th>
-                    <th @onclick="() => SortBy('Species')">Species @(SortIndicator("Species"))</th>
-                    <th @onclick="() => SortBy('Breed')">Breed @(SortIndicator("Breed"))</th>
-                    <th @onclick="() => SortBy('Color')">Color @(SortIndicator("Color"))</th>
-                    <th @onclick="() => SortBy('DateOfBirth')">Date of Birth @(SortIndicator("DateOfBirth"))</th>
+                    <th @onclick="@(() => SortBy("Id"))">Animal ID @(SortIndicator("Id"))</th>
+                    <th @onclick="@(() => SortBy("Name"))">Name @(SortIndicator("Name"))</th>
+                    <th @onclick="@(() => SortBy("Species"))">Species @(SortIndicator("Species"))</th>
+                    <th @onclick="@(() => SortBy("Breed"))">Breed @(SortIndicator("Breed"))</th>
+                    <th @onclick="@(() => SortBy("Color"))">Color @(SortIndicator("Color"))</th>
+                    <th @onclick="@(() => SortBy("DateOfBirth"))">Date of Birth @(SortIndicator("DateOfBirth"))</th>
                     <th class="text-end">Actions</th>
                 </tr>
             </thead>
