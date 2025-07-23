@@ -109,9 +109,12 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] If breed/species unavailable, user can continue to type and input data
 - [x] Add JSON data of species/breed
 
+**Add HTML/CSS to Animal Details to make animal info available
+- [ ] Mark if complete 
+
 ### Step 3: Medication & Scheduling
 - [x] Create a simple UI to manage a list of common medications for the shelter.
-- [ ] On the "Animal Detail" page, build the UI to schedule medications. This will create `ScheduledDose` documents in Firestore.
+- [x] On the "Animal Detail" page, build the UI to schedule medications. This will create `ScheduledDose` documents in Firestore.
 
 ### Step 4: The Dashboard & Core Logging Workflow
 - [ ] This is the most critical feature. Design a "Today's Medications" dashboard.
