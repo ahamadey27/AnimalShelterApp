@@ -11,13 +11,13 @@ namespace AnimalShelterApp.Shared
     public class Shelter
     {
         // The unique identifier for the shelter, mapping to the Firestore document ID.
-        public string Id { get; set; }
+        public string Id { get; set; } = string.Empty;
 
         // The official name of the shelter.
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         // The physical address of the shelter.
-        public string Address { get; set; }
+        public string Address { get; set; } = string.Empty;
 
     }
 }

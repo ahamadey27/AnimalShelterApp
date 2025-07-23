@@ -62,7 +62,7 @@ else
     private async Task LoadMedications()
     {
         isLoading = true;
-        if (AuthService.CurrentUser?.ShelterId != null)
+        if (AuthService.CurrentUser?.ShelterId != null && AuthService.Token != null)
         {
             medications = await FirestoreService.GetMedicationsAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
         }
@@ -83,6 +83,8 @@ else
 
     private async Task SaveMedication()
     {
+        if (AuthService.CurrentUser?.ShelterId == null || AuthService.Token == null) return;
+
         if (string.IsNullOrWhiteSpace(editingMedication.Id))
         {
             // New medication
@@ -99,6 +101,7 @@ else
 
     private async Task DeleteMedication(string id)
     {
+        if (AuthService.CurrentUser?.ShelterId == null || AuthService.Token == null) return;
         await FirestoreService.DeleteMedicationAsync(AuthService.CurrentUser.ShelterId, id, AuthService.Token);
         await LoadMedications();
     }

@@ -30,18 +30,26 @@ namespace AnimalShelterApp.Services
             _httpClient = httpClient;
             _configuration = configuration;
             _firestoreService = firestoreService;
-            _apiKey = _configuration["Firebase:apiKey"];
+            _apiKey = _configuration["Firebase:apiKey"] ?? throw new InvalidOperationException("Firebase API key not found.");
         }
 
         /// <summary>
         /// Gets the currently authenticated user
         /// </summary>
-        public UserProfile? CurrentUser => _currentUser;
+        public UserProfile? CurrentUser
+        {
+            get => _currentUser;
+            private set => _currentUser = value;
+        }
 
         /// <summary>
         /// Gets the authentication token for the current user
         /// </summary>
-        public string? Token => _token;
+        public string? Token
+        {
+            get => _token;
+            private set => _token = value;
+        }
 
         /// <summary>
         /// Login with email and password
@@ -69,16 +77,18 @@ namespace AnimalShelterApp.Services
                     var idToken = responseContent.GetProperty("idToken").GetString();
                     var uid = responseContent.GetProperty("localId").GetString();
 
+                    if (idToken == null || uid == null) return false;
+
                     // Store the token
-                    _token = idToken;
+                    Token = idToken;
 
                     // Get the user profile from Firestore
-                    _currentUser = await _firestoreService.GetUserProfileAsync(uid, _token);
+                    CurrentUser = await _firestoreService.GetUserProfileAsync(uid, Token);
 
                     // Notify subscribers that auth state has changed
                     OnAuthStateChanged?.Invoke();
 
-                    return _currentUser != null;
+                    return CurrentUser != null;
                 }
                 else
                 {
@@ -121,8 +131,10 @@ namespace AnimalShelterApp.Services
                         var idToken = responseContent.GetProperty("idToken").GetString();
                         var uid = responseContent.GetProperty("localId").GetString();
 
+                        if (idToken == null || uid == null) return false;
+
                         Console.WriteLine($"Registration successful. Got UID: {uid}");
-                        _token = idToken;
+                        Token = idToken;
 
                         // Create a new shelter
                         var newShelter = new Shelter
@@ -134,7 +146,7 @@ namespace AnimalShelterApp.Services
 
                         Console.WriteLine($"Attempting to create shelter with ID: {newShelter.Id}");
                         // Add the shelter to Firestore
-                        var shelterCreated = await _firestoreService.CreateShelterAsync(newShelter, _token);
+                        var shelterCreated = await _firestoreService.CreateShelterAsync(newShelter, Token);
 
                         if (!shelterCreated)
                         {
@@ -143,7 +155,7 @@ namespace AnimalShelterApp.Services
                         }
 
                         // Create a user profile
-                        _currentUser = new UserProfile
+                        CurrentUser = new UserProfile
                         {
                             Uid = uid,
                             Email = email,
@@ -153,42 +165,34 @@ namespace AnimalShelterApp.Services
 
                         Console.WriteLine($"Attempting to create user profile for UID: {uid}");
                         // Add the user profile to Firestore
-                        var profileCreated = await _firestoreService.CreateUserProfileAsync(_currentUser, _token);
-
-                        if (!profileCreated)
+                        if (CurrentUser != null && Token != null)
                         {
-                            Console.WriteLine("Failed to create user profile");
-                            return false;
+                            var profileCreated = await _firestoreService.CreateUserProfileAsync(CurrentUser, Token);
+
+                            if (profileCreated)
+                            {
+                                OnAuthStateChanged?.Invoke();
+                                return true;
+                            }
+                            else
+                            {
+                                Console.WriteLine("Failed to create user profile");
+                                // TODO: Maybe delete the user from Auth and the shelter from Firestore?
+                                return false;
+                            }
                         }
-
-                        // Notify subscribers that auth state has changed
-                        OnAuthStateChanged?.Invoke();
-
-                        return true;
+                        return false;
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error during registration process: {ex.Message}");
+                        Console.WriteLine($"Error during registration post-auth: {ex.Message}");
                         return false;
                     }
                 }
                 else
                 {
                     var error = await response.Content.ReadFromJsonAsync<JsonElement>();
-
-                    // Log more detailed error information
-                    string errorMessage = "Unknown error";
-                    if (error.TryGetProperty("error", out JsonElement errorDetails))
-                    {
-                        if (errorDetails.TryGetProperty("message", out JsonElement message))
-                        {
-                            errorMessage = message.GetString() ?? "Unknown error";
-                        }
-                    }
-
-                    Console.WriteLine($"Registration failed: {errorMessage}");
-                    Console.WriteLine($"Full error details: {error}");
-
+                    Console.WriteLine($"Registration failed: {error}");
                     return false;
                 }
             }

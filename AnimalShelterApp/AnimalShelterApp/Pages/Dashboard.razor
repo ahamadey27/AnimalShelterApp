@@ -33,7 +33,7 @@ else
                 @foreach (var dose in overdueDoses)
                 {
                     <div class="list-group-item list-group-item-action bg-danger-subtle mb-2 border-danger">
-                        @DoseCard(dose, "Log as Given")
+                        @DoseCard("Log as Given")(dose)
                     </div>
                 }
                 @if (!overdueDoses.Any()) { <p class="text-muted">No overdue doses.</p> }
@@ -47,7 +47,7 @@ else
                 @foreach (var dose in upcomingDoses)
                 {
                     <div class="list-group-item list-group-item-action mb-2">
-                        @DoseCard(dose, "Log as Given")
+                        @DoseCard("Log as Given")(dose)
                     </div>
                 }
                 @if (!upcomingDoses.Any()) { <p class="text-muted">No upcoming doses.</p> }
@@ -61,7 +61,7 @@ else
                 @foreach (var dose in completedDoses)
                 {
                     <div class="list-group-item list-group-item-action bg-success-subtle mb-2 border-success">
-                        @DoseCard(dose, "Logged")
+                        @DoseCard("Logged")(dose)
                     </div>
                 }
                 @if (!completedDoses.Any()) { <p class="text-muted">No doses logged yet today.</p> }
@@ -72,7 +72,7 @@ else
 
 @code {
     // This is a "template" for rendering the dose card UI
-    private RenderFragment<DashboardDoseViewModel> DoseCard(DashboardDoseViewModel dose, string buttonText) => @<div class="d-flex w-100 justify-content-between">
+    private RenderFragment<DashboardDoseViewModel> DoseCard(string buttonText) => (dose) =>@<div class="d-flex w-100 justify-content-between">
         <div>
             <h5 class="mb-1">@dose.MedicationName</h5>
             <p class="mb-1">For: <strong>@dose.AnimalName</strong> (@dose.Dosage)</p>

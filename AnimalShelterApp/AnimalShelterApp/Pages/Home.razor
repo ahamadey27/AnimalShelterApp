@@ -75,7 +75,7 @@ else
         isLoading = true;
         
         // If logged in, get shelter information
-        if (AuthService.CurrentUser != null)
+        if (AuthService.CurrentUser != null && AuthService.Token != null)
         {
             try
             {
