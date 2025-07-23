@@ -8,55 +8,28 @@
 @inject AuthService AuthService
 @inject NavigationManager NavigationManager
 @inject FirestoreService FirestoreService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @implements IDisposable
 
-<h1>Home</h1>
+<PageTitle>Home</PageTitle>
 
-@if (AuthService.CurrentUser != null)
-{
-    <div class="container">
-        <div class="jumbotron">
-            <h1 class="display-4">Welcome to Pet Medication Tracker!</h1>
-            @if (isLoading)
-            {
-                <p>Loading shelter information...</p>
-            }
-            else
-            {
-                <p class="lead">
-                    Hello, @AuthService.CurrentUser.DisplayName! This dashboard will help you track medications for all animals in @shelter?.Name.
-                </p>
-            }
-            <hr class="my-4">
-            <p>
-                Get started by adding animals and their medication schedules. Then use the main dashboard to log doses as they're administered.
-            </p>
-            <div class="mt-4">
-                <a class="btn btn-primary btn-lg me-2" href="animals">Manage Animals</a>
-                <a class="btn btn-info btn-lg" href="medications">Manage Medications</a>
-            </div>
+<h1>Welcome to the Animal Shelter App!</h1>
+
+<AuthorizeView>
+    <Authorized>
+        <h4>Hello, @context.User.Identity?.Name!</h4>
+        <p>You are logged in and can now manage your shelter's animals and their medications.</p>
+        <p>Use the navigation menu to get started.</p>
+    </Authorized>
+    <NotAuthorized>
+        <h4>Please log in or register to continue.</h4>
+        <p>This application helps you manage animals in your shelter, track their medications, and view daily schedules.</p>
+        <div class="mt-4">
+            <a href="login" class="btn btn-primary">Login</a>
+            <a href="register" class="btn btn-secondary">Register</a>
         </div>
-    </div>
-}
-else
-{
-    <div class="container">
-        <div class="jumbotron">
-            <h1 class="display-4">Welcome to Pet Medication Tracker!</h1>
-            <p class="lead">
-                The easiest way to track medication administration for animal shelters and rescues.
-            </p>
-            <hr class="my-4">
-            <p>
-                Please log in or create a new account to get started.
-            </p>
-            <div class="mt-4">
-                <a class="btn btn-primary btn-lg me-2" href="login">Login</a>
-                <a class="btn btn-success btn-lg" href="register">Create Account</a>
-            </div>
-        </div>
-    </div>
-}
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
     private Shelter? shelter = new Shelter(); 
@@ -110,8 +83,19 @@ else
         await LoadShelterData();
     }
 
+    protected override void OnInitialized()
+    {
+        AuthenticationStateProvider.AuthenticationStateChanged += HandleAuthStateChanged;
+    }
+
+    private async void HandleAuthStateChanged(Task<AuthenticationState> authState)
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
     public void Dispose()
     {
         AuthService.OnAuthStateChanged -= AuthStateChanged;
+        AuthenticationStateProvider.AuthenticationStateChanged -= HandleAuthStateChanged;
     }
 }

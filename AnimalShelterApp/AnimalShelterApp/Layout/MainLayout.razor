@@ -1,31 +1,16 @@
 ﻿@namespace AnimalShelterApp.Layout
 @inherits LayoutComponentBase
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @implements IDisposable
-@using System
-@using System.Threading.Tasks
-@using Microsoft.AspNetCore.Components
-@using AnimalShelterApp.Services
-@using AnimalShelterApp.Layout
-@inject AuthService AuthService
-@inject NavigationManager NavigationManager
 
 <div class="page">
     <div class="sidebar">
-        <AnimalShelterApp.Layout.NavMenu />
+        <NavMenu />
     </div>
 
     <main>
         <div class="top-row px-4">
-            @if (AuthService?.CurrentUser != null)
-            {
-                <span class="me-3">Hello, @AuthService.CurrentUser.DisplayName!</span>
-                <button class="btn btn-sm btn-outline-danger" @onclick="Logout">Logout</button>
-            }
-            else
-            {
-                <a href="login" class="btn btn-sm btn-outline-primary">Login</a>
-                <a href="register" class="btn btn-sm btn-outline-success ms-2">Register</a>
-            }
+            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
         </div>
 
         <article class="content px-4">
@@ -37,36 +22,19 @@
 @code {
     protected override void OnInitialized()
     {
-        // Subscribe to auth state changes to refresh UI
-        if (AuthService != null)
-        {
-            AuthService.OnAuthStateChanged += AuthStateChanged;
-        }
+        // Subscribe to the built-in AuthenticationStateChanged event
+        AuthenticationStateProvider.AuthenticationStateChanged += HandleAuthStateChanged;
     }
 
-    private async Task AuthStateChanged()
+    private async void HandleAuthStateChanged(Task<AuthenticationState> authState)
     {
+        // Re-render the component when the authentication state changes
         await InvokeAsync(StateHasChanged);
     }
 
+    // Unsubscribe from the event when the component is destroyed
     public void Dispose()
     {
-        if (AuthService != null)
-        {
-            AuthService.OnAuthStateChanged -= AuthStateChanged;
-        }
-    }
-    
-    private async Task Logout()
-    {
-        if (AuthService != null)
-        {
-            await AuthService.LogoutAsync();
-        }
-        
-        if (NavigationManager != null)
-        {
-            NavigationManager.NavigateTo("/");
-        }
+        AuthenticationStateProvider.AuthenticationStateChanged -= HandleAuthStateChanged;
     }
 }
