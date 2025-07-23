@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using AnimalShelterApp.Shared;
 using Microsoft.Extensions.Configuration;
+using System.Net.Http.Headers;
 
 namespace AnimalShelterApp.Services
 {
@@ -653,9 +654,83 @@ namespace AnimalShelterApp.Services
             return response.IsSuccessStatusCode;
         }
 
+        // Add these two new methods for scheduled doses
 
+        public async Task<bool> CreateScheduledDoseAsync(string shelterId, ScheduledDose dose, string token)
+        {
+            var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/schedule?documentId={dose.Id}";
+            var payload = new
+            {
+                fields = new
+                {
+                    animalId = new { stringValue = dose.AnimalId },
+                    medicationId = new { stringValue = dose.MedicationId },
+                    dosage = new { stringValue = dose.Dosage },
+                    timeOfDay = new { stringValue = dose.TimeOfDay },
+                    notes = new { stringValue = dose.Notes }
+                }
+            };
 
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var response = await _httpClient.PostAsJsonAsync(url, payload);
+            return response.IsSuccessStatusCode;
+        }
 
+        public async Task<List<ScheduledDose>> GetScheduledDosesForAnimalAsync(string shelterId, string animalId, string token)
+        {
+            var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents:runQuery";
+            var payload = new
+            {
+                structuredQuery = new
+                {
+                    from = new[] { new { collectionId = "schedule" } },
+                    where = new
+                    {
+                        fieldFilter = new
+                        {
+                            field = new { fieldPath = "animalId" },
+                            op = "EQUAL",
+                            value = new { stringValue = animalId }
+                        }
+                    },
+                    // Optional: Order by time of day
+                    orderBy = new[] { new { field = new { fieldPath = "timeOfDay" }, direction = "ASCENDING" } }
+                }
+            };
 
+            var request = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            
+            // The query is run against the root of the shelter document
+            var fullUrl = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}:runQuery";
+            var response = await _httpClient.PostAsJsonAsync(fullUrl, payload);
+
+            var doses = new List<ScheduledDose>();
+            if (!response.IsSuccessStatusCode) return doses;
+
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+            using var jsonDoc = JsonDocument.Parse(jsonResponse);
+
+            foreach (var element in jsonDoc.RootElement.EnumerateArray())
+            {
+                if (element.TryGetProperty("document", out var doc))
+                {
+                    var dose = new ScheduledDose
+                    {
+                        Id = doc.GetProperty("name").GetString()?.Split('/').Last() ?? "",
+                        AnimalId = doc.GetProperty("fields").GetProperty("animalId").GetProperty("stringValue").GetString() ?? "",
+                        MedicationId = doc.GetProperty("fields").GetProperty("medicationId").GetProperty("stringValue").GetString() ?? "",
+                        Dosage = doc.GetProperty("fields").GetProperty("dosage").GetProperty("stringValue").GetString() ?? "",
+                        TimeOfDay = doc.GetProperty("fields").GetProperty("timeOfDay").GetProperty("stringValue").GetString() ?? "",
+                        Notes = doc.GetProperty("fields").GetProperty("notes").GetProperty("stringValue").GetString() ?? ""
+                    };
+                    doses.Add(dose);
+                }
+            }
+            return doses;
+        }
     }
 }
