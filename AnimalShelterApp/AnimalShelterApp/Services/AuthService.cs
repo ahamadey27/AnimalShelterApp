@@ -16,61 +16,59 @@ namespace AnimalShelterApp.Services
     {
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
-        private readonly IConfiguration _configuration;
         private readonly FirestoreService _firestoreService;
         private readonly IJSRuntime _jsRuntime;
-
-        private UserProfile? _currentUser;
-        private string? _token;
+        private ClaimsPrincipal _anonymous = new ClaimsPrincipal(new ClaimsIdentity());
 
         public AuthService(HttpClient httpClient, IConfiguration configuration, FirestoreService firestoreService, IJSRuntime jsRuntime)
         {
             _httpClient = httpClient;
-            _configuration = configuration;
+            _apiKey = configuration["Firebase:apiKey"] ?? throw new InvalidOperationException("Firebase API key not found.");
             _firestoreService = firestoreService;
             _jsRuntime = jsRuntime;
-            _apiKey = _configuration["Firebase:apiKey"] ?? throw new InvalidOperationException("Firebase API key not found.");
         }
 
-        public UserProfile? CurrentUser => _currentUser;
-        public string? Token => _token;
+        public UserProfile? CurrentUser { get; private set; }
+        public string? Token { get; private set; }
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            var identity = new ClaimsIdentity();
-            _httpClient.DefaultRequestHeaders.Authorization = null;
-
             try
             {
                 var token = await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", "authToken");
                 var userJson = await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", "userProfile");
 
-                if (!string.IsNullOrEmpty(token) && !string.IsNullOrEmpty(userJson))
+                if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(userJson))
                 {
-                    var user = JsonSerializer.Deserialize<UserProfile>(userJson);
-                    if (user != null)
-                    {
-                        identity = new ClaimsIdentity(new[]
-                        {
-                            new Claim(ClaimTypes.Name, user.DisplayName ?? string.Empty),
-                            new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-                            new Claim(ClaimTypes.NameIdentifier, user.Uid),
-                            new Claim("ShelterId", user.ShelterId)
-                        }, "apiauth");
-
-                        _currentUser = user;
-                        _token = token;
-                        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                    }
+                    return new AuthenticationState(_anonymous);
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error during authentication state retrieval: {ex.Message}");
-            }
 
-            var claimsPrincipal = new ClaimsPrincipal(identity);
-            return new AuthenticationState(claimsPrincipal);
+                var user = JsonSerializer.Deserialize<UserProfile>(userJson);
+                if (user == null)
+                {
+                    return new AuthenticationState(_anonymous);
+                }
+
+                // Attach the token to the HttpClient for all subsequent requests
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var identity = new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.Name, user.DisplayName ?? string.Empty),
+                    new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+                    new Claim(ClaimTypes.NameIdentifier, user.Uid),
+                    new Claim("ShelterId", user.ShelterId)
+                }, "apiauth");
+
+                CurrentUser = user;
+                Token = token;
+
+                return new AuthenticationState(new ClaimsPrincipal(identity));
+            }
+            catch
+            {
+                return new AuthenticationState(_anonymous);
+            }
         }
 
         public async Task<bool> LoginAsync(string email, string password)
@@ -152,8 +150,9 @@ namespace AnimalShelterApp.Services
 
         public async Task LogoutAsync()
         {
-            _currentUser = null;
-            _token = null;
+            CurrentUser = null;
+            Token = null;
+            _httpClient.DefaultRequestHeaders.Authorization = null;
             await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
             await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "userProfile");
             NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
