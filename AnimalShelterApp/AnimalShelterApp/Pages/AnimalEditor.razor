@@ -143,6 +143,89 @@ else
             </button>
         </div>
     </EditForm>
+
+    @if (IsEditMode)
+    {
+        <hr />
+
+        <h4>Medication Schedule</h4>
+
+        @if (scheduledDoses == null)
+        {
+            <p><em>Loading schedule...</em></p>
+        }
+        else
+        {
+            <!-- Display Existing Doses -->
+            @if (scheduledDoses.Any())
+            {
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Medication</th>
+                            <th>Dosage</th>
+                            <th>Time</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var dose in scheduledDoses)
+                        {
+                            <tr>
+                                <td>@(medications?.FirstOrDefault(m => m.Id == dose.MedicationId)?.Name ?? "Unknown")</td>
+                                <td>@dose.Dosage</td>
+                                <td>@dose.TimeOfDay</td>
+                                <td>@dose.Notes</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p>No medications scheduled for this animal.</p>
+            }
+
+            <!-- Add New Dose Form -->
+            <div class="card mt-4">
+                <div class="card-header">Schedule New Medication</div>
+                <div class="card-body">
+                    <EditForm Model="newDose" OnValidSubmit="ScheduleDose">
+                        <DataAnnotationsValidator />
+                        <div class="mb-3">
+                            <label class="form-label">Medication</label>
+                            <InputSelect @bind-Value="newDose.MedicationId" class="form-select">
+                                <option value="">Select Medication...</option>
+                                @if (medications != null)
+                                {
+                                    @foreach (var med in medications)
+                                    {
+                                        <option value="@med.Id">@med.Name</option>
+                                    }
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="@(() => newDose.MedicationId)" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Dosage</label>
+                            <InputText @bind-Value="newDose.Dosage" class="form-control" />
+                            <ValidationMessage For="@(() => newDose.Dosage)" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Time of Day (e.g., 08:00)</label>
+                            <InputText @bind-Value="newDose.TimeOfDay" class="form-control" />
+                            <ValidationMessage For="@(() => newDose.TimeOfDay)" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <InputTextArea @bind-Value="newDose.Notes" class="form-control" />
+                        </div>
+                        <button type="submit" class="btn btn-primary">Schedule Dose</button>
+                    </EditForm>
+                </div>
+            </div>
+        }
+    }
 }
 
 <style>
@@ -193,6 +276,9 @@ else
     private BreedInfo? breedInfo;
     private List<string> speciesSuggestions = new();
     private List<string> breedSuggestions = new();
+    private List<Medication>? medications;
+    private List<ScheduledDose>? scheduledDoses;
+    private ScheduledDose newDose = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -243,6 +329,13 @@ else
         if (animal != null && !string.IsNullOrEmpty(animal.Species))
         {
             UpdateBreedSuggestions(animal.Species);
+        }
+
+        // Also load medications and scheduled doses if in edit mode
+        if (IsEditMode && AuthService.CurrentUser != null && !string.IsNullOrEmpty(AuthService.Token))
+        {
+            medications = await FirestoreService.GetMedicationsAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
+            await LoadScheduledDoses();
         }
     }
 
@@ -381,5 +474,29 @@ else
     private void NavigateBack()
     {
         NavigationManager.NavigateTo("/animals");
+    }
+
+    private async Task LoadScheduledDoses()
+    {
+        if (AnimalId != null && AuthService.CurrentUser != null && !string.IsNullOrEmpty(AuthService.Token))
+        {
+            scheduledDoses = await FirestoreService.GetScheduledDosesForAnimalAsync(AuthService.CurrentUser.ShelterId, AnimalId, AuthService.Token);
+        }
+    }
+
+    private async Task ScheduleDose()
+    {
+        if (animal == null || AuthService.CurrentUser == null || string.IsNullOrEmpty(AuthService.Token)) return;
+
+        newDose.Id = Guid.NewGuid().ToString("N").Substring(0, 12);
+        newDose.AnimalId = animal.Id;
+
+        var success = await FirestoreService.CreateScheduledDoseAsync(AuthService.CurrentUser.ShelterId, newDose, AuthService.Token);
+        if (success)
+        {
+            newDose = new(); // Reset form
+            await LoadScheduledDoses(); // Refresh list
+            StateHasChanged();
+        }
     }
 }
