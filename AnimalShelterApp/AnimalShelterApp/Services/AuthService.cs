@@ -4,7 +4,9 @@ using System.Net.Http.Json;
 using System.Threading.Tasks;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
-using AnimalShelterApp.Shared;
+using System.Net.Http.Headers;
+using Microsoft.JSInterop;
+using System.Text.Json;
 
 namespace AnimalShelterApp.Services
 {
@@ -18,6 +20,7 @@ namespace AnimalShelterApp.Services
         private readonly string _apiKey;
         private readonly IConfiguration _configuration;
         private readonly FirestoreService _firestoreService;
+        private readonly IJSRuntime _jsRuntime;
 
         // User data that persists throughout the session
         private UserProfile? _currentUser;
@@ -25,11 +28,12 @@ namespace AnimalShelterApp.Services
 
         public event Func<Task>? OnAuthStateChanged;
 
-        public AuthService(HttpClient httpClient, IConfiguration configuration, FirestoreService firestoreService)
+        public AuthService(HttpClient httpClient, IConfiguration configuration, FirestoreService firestoreService, IJSRuntime jsRuntime)
         {
             _httpClient = httpClient;
             _configuration = configuration;
             _firestoreService = firestoreService;
+            _jsRuntime = jsRuntime;
             _apiKey = _configuration["Firebase:apiKey"] ?? throw new InvalidOperationException("Firebase API key not found.");
         }
 
@@ -84,6 +88,13 @@ namespace AnimalShelterApp.Services
 
                     // Get the user profile from Firestore
                     CurrentUser = await _firestoreService.GetUserProfileAsync(uid, Token);
+
+                    if (CurrentUser != null)
+                    {
+                        var userJson = JsonSerializer.Serialize(CurrentUser);
+                        await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", Token);
+                        await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "userProfile", userJson);
+                    }
 
                     // Notify subscribers that auth state has changed
                     if (OnAuthStateChanged != null)
@@ -174,6 +185,10 @@ namespace AnimalShelterApp.Services
 
                             if (profileCreated)
                             {
+                                var userJson = JsonSerializer.Serialize(CurrentUser);
+                                await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", Token);
+                                await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "userProfile", userJson);
+
                                 if (OnAuthStateChanged != null)
                                 {
                                     await OnAuthStateChanged.Invoke();
@@ -216,6 +231,8 @@ namespace AnimalShelterApp.Services
         {
             CurrentUser = null;
             Token = null;
+            await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
+            await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "userProfile");
             if (OnAuthStateChanged != null)
             {
                 await OnAuthStateChanged.Invoke();
@@ -224,6 +241,15 @@ namespace AnimalShelterApp.Services
 
         public async Task InitializeAuthState()
         {
+            var token = await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", "authToken");
+            var userJson = await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", "userProfile");
+
+            if (!string.IsNullOrEmpty(token) && !string.IsNullOrEmpty(userJson))
+            {
+                Token = token;
+                CurrentUser = JsonSerializer.Deserialize<UserProfile>(userJson);
+            }
+
             if (OnAuthStateChanged != null)
             {
                 await OnAuthStateChanged.Invoke();

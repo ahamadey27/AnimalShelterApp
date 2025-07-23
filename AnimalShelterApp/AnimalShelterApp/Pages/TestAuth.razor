@@ -82,10 +82,9 @@
         return Task.CompletedTask;
     }
     
-    private Task LogoutAsync()
+    private async Task LogoutAsync()
     {
-        AuthService.Logout();
+        await AuthService.LogoutAsync();
         NavigationManager.NavigateTo("/login");
-        return Task.CompletedTask;
     }
 }

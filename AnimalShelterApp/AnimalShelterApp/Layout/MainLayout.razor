@@ -40,28 +40,33 @@
         // Subscribe to auth state changes to refresh UI
         if (AuthService != null)
         {
-            AuthService.OnAuthStateChanged += StateHasChanged;
+            AuthService.OnAuthStateChanged += AuthStateChanged;
         }
+    }
+
+    private async Task AuthStateChanged()
+    {
+        await InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()
     {
         if (AuthService != null)
         {
-            AuthService.OnAuthStateChanged -= StateHasChanged;
+            AuthService.OnAuthStateChanged -= AuthStateChanged;
         }
     }
     
-    private void Logout()
+    private async Task Logout()
     {
         if (AuthService != null)
         {
-            AuthService.Logout();
+            await AuthService.LogoutAsync();
         }
         
         if (NavigationManager != null)
         {
-            NavigationManager.NavigateTo("/login");
+            NavigationManager.NavigateTo("/");
         }
     }
 }
