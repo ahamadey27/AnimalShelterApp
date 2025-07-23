@@ -883,7 +883,11 @@ namespace AnimalShelterApp.Services
                                 }
                             }
                         }
-                    }
+                    },
+                    // --- Start of Added Line ---
+                    // This forces Firestore to require the composite index
+                    orderBy = new[] { new { field = new { fieldPath = "timeAdministered" }, direction = "ASCENDING" } }
+                    // --- End of Added Line ---
                 }
             };
 
