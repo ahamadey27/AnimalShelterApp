@@ -110,7 +110,7 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] Add JSON data of species/breed
 
 **Add HTML/CSS to Animal Details to make animal info available
-- [ ] Mark if complete 
+- [x] Mark if complete 
 
 ### Step 3: Medication & Scheduling
 - [x] Create a simple UI to manage a list of common medications for the shelter.
