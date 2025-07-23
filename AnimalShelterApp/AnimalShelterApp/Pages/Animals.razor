@@ -175,14 +175,14 @@ else
         NavigationManager.NavigateTo("/animals/add");
     }
 
+    private void NavigateToAnimalDetails(string animalId)
+    {
+        NavigationManager.NavigateTo($"/animals/details/{animalId}");
+    }
+
     private void NavigateToEditAnimal(string animalId)
     {
         NavigationManager.NavigateTo($"/animals/edit/{animalId}");
-    }
-
-    private void NavigateToAnimalDetails(string animalId)
-    {
-        NavigationManager.NavigateTo($"/animals/{animalId}");
     }
 
     private async Task DeleteAnimal(string animalId)
