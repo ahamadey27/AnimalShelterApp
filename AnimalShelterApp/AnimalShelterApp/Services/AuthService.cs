@@ -23,7 +23,7 @@ namespace AnimalShelterApp.Services
         private UserProfile? _currentUser;
         private string? _token;
 
-        public event Action? OnAuthStateChanged;
+        public event Func<Task>? OnAuthStateChanged;
 
         public AuthService(HttpClient httpClient, IConfiguration configuration, FirestoreService firestoreService)
         {
@@ -86,7 +86,10 @@ namespace AnimalShelterApp.Services
                     CurrentUser = await _firestoreService.GetUserProfileAsync(uid, Token);
 
                     // Notify subscribers that auth state has changed
-                    OnAuthStateChanged?.Invoke();
+                    if (OnAuthStateChanged != null)
+                    {
+                        await OnAuthStateChanged.Invoke();
+                    }
 
                     return CurrentUser != null;
                 }
@@ -171,7 +174,10 @@ namespace AnimalShelterApp.Services
 
                             if (profileCreated)
                             {
-                                OnAuthStateChanged?.Invoke();
+                                if (OnAuthStateChanged != null)
+                                {
+                                    await OnAuthStateChanged.Invoke();
+                                }
                                 return true;
                             }
                             else
@@ -206,43 +212,22 @@ namespace AnimalShelterApp.Services
         /// <summary>
         /// Logout the current user
         /// </summary>
-        public void Logout()
+        public async Task LogoutAsync()
         {
-            _currentUser = null;
-            _token = null;
-            OnAuthStateChanged?.Invoke();
-        }
-
-        /// <summary>
-        /// Initialize the authentication state, checking if user is already logged in
-        /// </summary>
-        public Task InitializeAsync()
-        {
-            // Since we don't have persistent login implemented yet,
-            // this is just a placeholder for future implementation
-            // We might use localStorage or similar to keep login state
-            return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// Get the current user's profile
-        /// </summary>
-        public Task<UserProfile> GetUserProfileAsync()
-        {
-            if (_currentUser == null)
+            CurrentUser = null;
+            Token = null;
+            if (OnAuthStateChanged != null)
             {
-                throw new InvalidOperationException("No user is currently logged in");
+                await OnAuthStateChanged.Invoke();
             }
-            return Task.FromResult(_currentUser);
         }
 
-        /// <summary>
-        /// Sign out the current user
-        /// </summary>
-        public Task SignOutAsync()
+        public async Task InitializeAuthState()
         {
-            Logout();
-            return Task.CompletedTask;
+            if (OnAuthStateChanged != null)
+            {
+                await OnAuthStateChanged.Invoke();
+            }
         }
     }
 }

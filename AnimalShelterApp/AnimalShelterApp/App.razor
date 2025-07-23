@@ -10,6 +10,8 @@
 @using Microsoft.JSInterop
 @using AnimalShelterApp
 @using AnimalShelterApp.Layout
+@using AnimalShelterApp.Services
+@inject AuthService AuthService
 
 <Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
@@ -23,3 +25,10 @@
         </LayoutView>
     </NotFound>
 </Router>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.InitializeAuthState();
+    }
+}

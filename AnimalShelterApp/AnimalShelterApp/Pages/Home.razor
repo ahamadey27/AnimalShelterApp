@@ -102,13 +102,12 @@ else
         }
         
         isLoading = false;
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
     
-    private async void AuthStateChanged()
+    private async Task AuthStateChanged()
     {
         await LoadShelterData();
-        StateHasChanged();
     }
 
     public void Dispose()
