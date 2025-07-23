@@ -746,5 +746,173 @@ namespace AnimalShelterApp.Services
             }
             return doses;
         }
+
+        /// <summary>
+        /// Gets all scheduled doses for an entire shelter, ordered by time.
+        /// </summary>
+
+        public async Task<List<ScheduledDose>> GetAllScheduledDosesAsync(string shelterId, string token)
+        {
+            var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}:runQuery";
+            var payload = new
+            {
+                structuredQuery = new
+                {
+                    from = new[] { new { collectionId = "schedule" } },
+                    orderBy = new[] { new { field = new { fieldPath = "timeOfDay" }, direction = "ASCENDING" } }
+                }
+            };
+
+            var request = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await _httpClient.SendAsync(request);
+            var doses = new List<ScheduledDose>();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Error getting all scheduled doses: {response.StatusCode} - {errorContent}");
+                return doses;
+            }
+
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+            using var jsonDoc = JsonDocument.Parse(jsonResponse);
+
+            foreach (var element in jsonDoc.RootElement.EnumerateArray())
+            {
+                if (element.TryGetProperty("document", out var doc) && doc.TryGetProperty("fields", out var fields))
+                {
+                    var dose = new ScheduledDose
+                    {
+                        Id = doc.GetProperty("name").GetString()?.Split('/').Last() ?? "",
+                        AnimalId = fields.TryGetProperty("animalId", out var animalIdProp) ? animalIdProp.GetProperty("stringValue").GetString() ?? "" : "",
+                        MedicationId = fields.TryGetProperty("medicationId", out var medIdProp) ? medIdProp.GetProperty("stringValue").GetString() ?? "" : "",
+                        Dosage = fields.TryGetProperty("dosage", out var dosageProp) ? dosageProp.GetProperty("stringValue").GetString() ?? "" : "",
+                        TimeOfDay = fields.TryGetProperty("timeOfDay", out var timeProp) ? timeProp.GetProperty("stringValue").GetString() ?? "" : "",
+                        Notes = fields.TryGetProperty("notes", out var notesProp) ? notesProp.GetProperty("stringValue").GetString() ?? "" : ""
+                    };
+                    doses.Add(dose);
+                }
+            }
+            return doses;
+        }
+
+        /// <summary>
+        /// Creates a new dose log entry in Firestore.
+        /// </summary>
+        public async Task<bool> CreateDoseLogAsync(string shelterId, DoseLog log, string token)
+        {
+            log.Id = Guid.NewGuid().ToString("N");
+            var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/logs?documentId={log.Id}";
+
+            var payload = new
+            {
+                fields = new
+                {
+                    scheduledDoseId = new { stringValue = log.ScheduledDoseId },
+                    animalId = new { stringValue = log.AnimalId },
+                    medicationName = new { stringValue = log.MedicationName },
+                    dosage = new { stringValue = log.Dosage },
+                    timeAdministered = new { timestampValue = log.TimeAdministered.ToUniversalTime().ToString("o") },
+                    administeredByUid = new { stringValue = log.AdministeredByUid },
+                    wasGiven = new { booleanValue = log.WasGiven }
+                }
+            };
+
+            var request = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = JsonContent.Create(payload)
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await _httpClient.SendAsync(request);
+            return response.IsSuccessStatusCode;
+        }
+
+        /// <summary>
+        /// Gets all dose logs for a specific date.
+        /// </summary>
+        public async Task<List<DoseLog>> GetDoseLogsForDateAsync(string shelterId, DateTime date, string token)
+        {
+            var startOfDay = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0, DateTimeKind.Utc);
+            var endOfDay = startOfDay.AddDays(1);
+
+            var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}:runQuery";
+            var payload = new
+            {
+                structuredQuery = new
+                {
+                    from = new[] { new { collectionId = "logs" } },
+                    where = new
+                    {
+                        compositeFilter = new
+                        {
+                            op = "AND",
+                            filters = new[]
+                            {
+                                new {
+                                    fieldFilter = new {
+                                        field = new { fieldPath = "timeAdministered" },
+                                        op = "GREATER_THAN_OR_EQUAL",
+                                        value = new { timestampValue = startOfDay.ToString("o") }
+                                    }
+                                },
+                                new {
+                                    fieldFilter = new {
+                                        field = new { fieldPath = "timeAdministered" },
+                                        op = "LESS_THAN",
+                                        value = new { timestampValue = endOfDay.ToString("o") }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            var request = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await _httpClient.SendAsync(request);
+            var logs = new List<DoseLog>();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Error getting dose logs: {response.StatusCode} - {errorContent}");
+                // This query will likely fail until you create the required index in Firestore.
+                return logs;
+            }
+
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+            using var jsonDoc = JsonDocument.Parse(jsonResponse);
+
+            foreach (var element in jsonDoc.RootElement.EnumerateArray())
+            {
+                if (element.TryGetProperty("document", out var doc) && doc.TryGetProperty("fields", out var fields))
+                {
+                    var log = new DoseLog
+                    {
+                        Id = doc.GetProperty("name").GetString()?.Split('/').Last() ?? "",
+                        ScheduledDoseId = fields.TryGetProperty("scheduledDoseId", out var sdId) ? sdId.GetProperty("stringValue").GetString() : null,
+                        AnimalId = fields.TryGetProperty("animalId", out var aId) ? aId.GetProperty("stringValue").GetString() : null,
+                        MedicationName = fields.TryGetProperty("medicationName", out var mName) ? mName.GetProperty("stringValue").GetString() : null,
+                        Dosage = fields.TryGetProperty("dosage", out var d) ? d.GetProperty("stringValue").GetString() : null,
+                        AdministeredByUid = fields.TryGetProperty("administeredByUid", out var uId) ? uId.GetProperty("stringValue").GetString() : null,
+                        WasGiven = fields.TryGetProperty("wasGiven", out var wg) && wg.GetBoolean(),
+                        TimeAdministered = fields.TryGetProperty("timeAdministered", out var ta) && DateTime.TryParse(ta.GetProperty("timestampValue").GetString(), out var dt) ? dt : DateTime.MinValue
+                    };
+                    logs.Add(log);
+                }
+            }
+            return logs;
+        }
     }
 }
