@@ -830,6 +830,19 @@ namespace AnimalShelterApp.Services
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             var response = await _httpClient.SendAsync(request);
+
+            // --- Start of Added Logging ---
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Successfully created dose log entry.");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Failed to create dose log. Status: {response.StatusCode}, Response: {errorContent}");
+            }
+            // --- End of Added Logging ---
+
             return response.IsSuccessStatusCode;
         }
 
