@@ -7,14 +7,12 @@ using Microsoft.Extensions.Configuration;
 using System.Net.Http.Headers;
 using Microsoft.JSInterop;
 using AnimalShelterApp.Shared;
+using Microsoft.AspNetCore.Components.Authorization;
+using System.Security.Claims;
 
 namespace AnimalShelterApp.Services
 {
-    /// <summary>
-    /// Provides authentication-related functionality for the application
-    /// using Firebase Authentication.
-    /// </summary>
-    public class AuthService
+    public class AuthService : AuthenticationStateProvider
     {
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
@@ -22,11 +20,8 @@ namespace AnimalShelterApp.Services
         private readonly FirestoreService _firestoreService;
         private readonly IJSRuntime _jsRuntime;
 
-        // User data that persists throughout the session
         private UserProfile? _currentUser;
         private string? _token;
-
-        public event Func<Task>? OnAuthStateChanged;
 
         public AuthService(HttpClient httpClient, IConfiguration configuration, FirestoreService firestoreService, IJSRuntime jsRuntime)
         {
@@ -37,43 +32,53 @@ namespace AnimalShelterApp.Services
             _apiKey = _configuration["Firebase:apiKey"] ?? throw new InvalidOperationException("Firebase API key not found.");
         }
 
-        /// <summary>
-        /// Gets the currently authenticated user
-        /// </summary>
-        public UserProfile? CurrentUser
+        public UserProfile? CurrentUser => _currentUser;
+        public string? Token => _token;
+
+        public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            get => _currentUser;
-            private set => _currentUser = value;
+            var identity = new ClaimsIdentity();
+            _httpClient.DefaultRequestHeaders.Authorization = null;
+
+            try
+            {
+                var token = await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", "authToken");
+                var userJson = await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", "userProfile");
+
+                if (!string.IsNullOrEmpty(token) && !string.IsNullOrEmpty(userJson))
+                {
+                    var user = JsonSerializer.Deserialize<UserProfile>(userJson);
+                    if (user != null)
+                    {
+                        identity = new ClaimsIdentity(new[]
+                        {
+                            new Claim(ClaimTypes.Name, user.DisplayName ?? string.Empty),
+                            new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+                            new Claim(ClaimTypes.NameIdentifier, user.Uid),
+                            new Claim("ShelterId", user.ShelterId)
+                        }, "apiauth");
+
+                        _currentUser = user;
+                        _token = token;
+                        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error during authentication state retrieval: {ex.Message}");
+            }
+
+            var claimsPrincipal = new ClaimsPrincipal(identity);
+            return new AuthenticationState(claimsPrincipal);
         }
 
-        /// <summary>
-        /// Gets the authentication token for the current user
-        /// </summary>
-        public string? Token
-        {
-            get => _token;
-            private set => _token = value;
-        }
-
-        /// <summary>
-        /// Login with email and password
-        /// </summary>
         public async Task<bool> LoginAsync(string email, string password)
         {
             try
             {
-                // Prepare the request body
-                var request = new
-                {
-                    email,
-                    password,
-                    returnSecureToken = true
-                };
-
-                // Send the login request to Firebase Authentication REST API
-                var response = await _httpClient.PostAsJsonAsync(
-                    $"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={_apiKey}",
-                    request);
+                var request = new { email, password, returnSecureToken = true };
+                var response = await _httpClient.PostAsJsonAsync($"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={_apiKey}", request);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -83,33 +88,18 @@ namespace AnimalShelterApp.Services
 
                     if (idToken == null || uid == null) return false;
 
-                    // Store the token
-                    Token = idToken;
-
-                    // Get the user profile from Firestore
-                    CurrentUser = await _firestoreService.GetUserProfileAsync(uid, Token);
-
-                    if (CurrentUser != null)
+                    var userProfile = await _firestoreService.GetUserProfileAsync(uid, idToken);
+                    if (userProfile != null)
                     {
-                        var userJson = JsonSerializer.Serialize(CurrentUser);
-                        await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", Token);
+                        var userJson = JsonSerializer.Serialize(userProfile);
+                        await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", idToken);
                         await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "userProfile", userJson);
-                    }
 
-                    // Notify subscribers that auth state has changed
-                    if (OnAuthStateChanged != null)
-                    {
-                        await OnAuthStateChanged.Invoke();
+                        NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+                        return true;
                     }
-
-                    return CurrentUser != null;
                 }
-                else
-                {
-                    var error = await response.Content.ReadFromJsonAsync<JsonElement>();
-                    Console.WriteLine($"Login failed: {error}");
-                    return false;
-                }
+                return false;
             }
             catch (Exception ex)
             {
@@ -118,104 +108,40 @@ namespace AnimalShelterApp.Services
             }
         }
 
-        /// <summary>
-        /// Register a new user with email and password
-        /// </summary>
         public async Task<bool> RegisterAsync(string email, string password, string displayName, string shelterName, string shelterAddress)
         {
             try
             {
-                // Register the user with Firebase Authentication
-                var authRequest = new
-                {
-                    email,
-                    password,
-                    returnSecureToken = true
-                };
-
-                var response = await _httpClient.PostAsJsonAsync(
-                    $"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={_apiKey}",
-                    authRequest);
+                var authRequest = new { email, password, returnSecureToken = true };
+                var response = await _httpClient.PostAsJsonAsync($"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={_apiKey}", authRequest);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    try
+                    var responseContent = await response.Content.ReadFromJsonAsync<JsonElement>();
+                    var idToken = responseContent.GetProperty("idToken").GetString();
+                    var uid = responseContent.GetProperty("localId").GetString();
+
+                    if (idToken == null || uid == null) return false;
+
+                    var newShelter = new Shelter { Id = Guid.NewGuid().ToString(), Name = shelterName, Address = shelterAddress };
+                    var shelterCreated = await _firestoreService.CreateShelterAsync(newShelter, idToken);
+
+                    if (!shelterCreated) return false;
+
+                    var userProfile = new UserProfile { Uid = uid, Email = email, DisplayName = displayName, ShelterId = newShelter.Id };
+                    var profileCreated = await _firestoreService.CreateUserProfileAsync(userProfile, idToken);
+
+                    if (profileCreated)
                     {
-                        var responseContent = await response.Content.ReadFromJsonAsync<JsonElement>();
-                        var idToken = responseContent.GetProperty("idToken").GetString();
-                        var uid = responseContent.GetProperty("localId").GetString();
+                        var userJson = JsonSerializer.Serialize(userProfile);
+                        await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", idToken);
+                        await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "userProfile", userJson);
 
-                        if (idToken == null || uid == null) return false;
-
-                        Console.WriteLine($"Registration successful. Got UID: {uid}");
-                        Token = idToken;
-
-                        // Create a new shelter
-                        var newShelter = new Shelter
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            Name = shelterName,
-                            Address = shelterAddress
-                        };
-
-                        Console.WriteLine($"Attempting to create shelter with ID: {newShelter.Id}");
-                        // Add the shelter to Firestore
-                        var shelterCreated = await _firestoreService.CreateShelterAsync(newShelter, Token);
-
-                        if (!shelterCreated)
-                        {
-                            Console.WriteLine("Failed to create shelter");
-                            return false;
-                        }
-
-                        // Create a user profile
-                        CurrentUser = new UserProfile
-                        {
-                            Uid = uid,
-                            Email = email,
-                            DisplayName = displayName,
-                            ShelterId = newShelter.Id
-                        };
-
-                        Console.WriteLine($"Attempting to create user profile for UID: {uid}");
-                        // Add the user profile to Firestore
-                        if (CurrentUser != null && Token != null)
-                        {
-                            var profileCreated = await _firestoreService.CreateUserProfileAsync(CurrentUser, Token);
-
-                            if (profileCreated)
-                            {
-                                var userJson = JsonSerializer.Serialize(CurrentUser);
-                                await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", Token);
-                                await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "userProfile", userJson);
-
-                                if (OnAuthStateChanged != null)
-                                {
-                                    await OnAuthStateChanged.Invoke();
-                                }
-                                return true;
-                            }
-                            else
-                            {
-                                Console.WriteLine("Failed to create user profile");
-                                // TODO: Maybe delete the user from Auth and the shelter from Firestore?
-                                return false;
-                            }
-                        }
-                        return false;
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error during registration post-auth: {ex.Message}");
-                        return false;
+                        NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+                        return true;
                     }
                 }
-                else
-                {
-                    var error = await response.Content.ReadFromJsonAsync<JsonElement>();
-                    Console.WriteLine($"Registration failed: {error}");
-                    return false;
-                }
+                return false;
             }
             catch (Exception ex)
             {
@@ -224,36 +150,19 @@ namespace AnimalShelterApp.Services
             }
         }
 
-        /// <summary>
-        /// Logout the current user
-        /// </summary>
         public async Task LogoutAsync()
         {
-            CurrentUser = null;
-            Token = null;
+            _currentUser = null;
+            _token = null;
             await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
             await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "userProfile");
-            if (OnAuthStateChanged != null)
-            {
-                await OnAuthStateChanged.Invoke();
-            }
+            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
         }
 
         public async Task InitializeAuthState()
         {
-            var token = await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", "authToken");
-            var userJson = await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", "userProfile");
-
-            if (!string.IsNullOrEmpty(token) && !string.IsNullOrEmpty(userJson))
-            {
-                Token = token;
-                CurrentUser = JsonSerializer.Deserialize<UserProfile>(userJson);
-            }
-
-            if (OnAuthStateChanged != null)
-            {
-                await OnAuthStateChanged.Invoke();
-            }
+            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+            await Task.CompletedTask;
         }
     }
 }
