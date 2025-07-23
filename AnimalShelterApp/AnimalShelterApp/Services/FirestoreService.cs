@@ -887,7 +887,6 @@ namespace AnimalShelterApp.Services
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"Error getting dose logs: {response.StatusCode} - {errorContent}");
-                // This query will likely fail until you create the required index in Firestore.
                 return logs;
             }
 
@@ -901,14 +900,21 @@ namespace AnimalShelterApp.Services
                     var log = new DoseLog
                     {
                         Id = doc.GetProperty("name").GetString()?.Split('/').Last() ?? "",
-                        ScheduledDoseId = fields.TryGetProperty("scheduledDoseId", out var sdId) ? sdId.GetProperty("stringValue").GetString() : null,
-                        AnimalId = fields.TryGetProperty("animalId", out var aId) ? aId.GetProperty("stringValue").GetString() : null,
-                        MedicationName = fields.TryGetProperty("medicationName", out var mName) ? mName.GetProperty("stringValue").GetString() : null,
-                        Dosage = fields.TryGetProperty("dosage", out var d) ? d.GetProperty("stringValue").GetString() : null,
-                        AdministeredByUid = fields.TryGetProperty("administeredByUid", out var uId) ? uId.GetProperty("stringValue").GetString() : null,
-                        WasGiven = fields.TryGetProperty("wasGiven", out var wg) && wg.GetBoolean(),
-                        TimeAdministered = fields.TryGetProperty("timeAdministered", out var ta) && DateTime.TryParse(ta.GetProperty("timestampValue").GetString(), out var dt) ? dt : DateTime.MinValue
+                        ScheduledDoseId = fields.TryGetProperty("scheduledDoseId", out var sdId) ? sdId.GetProperty("stringValue").GetString() ?? "" : "",
+                        AnimalId = fields.TryGetProperty("animalId", out var animalId) ? animalId.GetProperty("stringValue").GetString() ?? "" : "",
+                        MedicationName = fields.TryGetProperty("medicationName", out var medName) ? medName.GetProperty("stringValue").GetString() ?? "" : "",
+                        Dosage = fields.TryGetProperty("dosage", out var dosage) ? dosage.GetProperty("stringValue").GetString() ?? "" : "",
+                        AdministeredByUid = fields.TryGetProperty("administeredByUid", out var adminId) ? adminId.GetProperty("stringValue").GetString() ?? "" : "",
+                        WasGiven = fields.TryGetProperty("wasGiven", out var wasGivenProp)
+                                   && wasGivenProp.TryGetProperty("booleanValue", out var boolProp)
+                                   && boolProp.GetBoolean()
                     };
+
+                    if (fields.TryGetProperty("timeAdministered", out var timeProp) && timeProp.TryGetProperty("timestampValue", out var tsVal))
+                    {
+                        log.TimeAdministered = DateTime.Parse(tsVal.GetString() ?? "");
+                    }
+
                     logs.Add(log);
                 }
             }
