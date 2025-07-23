@@ -6,7 +6,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using System.Net.Http.Headers;
 using Microsoft.JSInterop;
-using System.Text.Json;
+using AnimalShelterApp.Shared;
 
 namespace AnimalShelterApp.Services
 {
