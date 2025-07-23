@@ -1,14 +1,7 @@
 ﻿@page "/"
-@using System
-@using System.Threading.Tasks
-@using Microsoft.AspNetCore.Components
-@using Microsoft.AspNetCore.Components.Web
-@using AnimalShelterApp.Services
-@using AnimalShelterApp.Shared
-@inject AuthService AuthService
-@inject NavigationManager NavigationManager
-@inject FirestoreService FirestoreService
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject AuthService AuthService
+@inject FirestoreService FirestoreService
 @implements IDisposable
 
 <PageTitle>Home</PageTitle>
@@ -18,7 +11,16 @@
 <AuthorizeView>
     <Authorized>
         <h4>Hello, @context.User.Identity?.Name!</h4>
-        <p>You are logged in and can now manage your shelter's animals and their medications.</p>
+
+        @if (isLoading)
+        {
+            <p><em>Loading shelter details...</em></p>
+        }
+        else if (shelter != null)
+        {
+            <h5>Welcome to @shelter.Name!</h5>
+        }
+        
         <p>Use the navigation menu to get started.</p>
     </Authorized>
     <NotAuthorized>
@@ -32,70 +34,50 @@
 </AuthorizeView>
 
 @code {
-    private Shelter? shelter = new Shelter(); 
+    private Shelter? shelter;
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        // Subscribe to auth state changes
-        AuthService.OnAuthStateChanged += AuthStateChanged;
-
+        // Subscribe to the correct event
+        AuthenticationStateProvider.AuthenticationStateChanged += HandleAuthStateChanged;
+        // Load initial data
         await LoadShelterData();
     }
-    
+
     private async Task LoadShelterData()
     {
         isLoading = true;
-        
-        // If logged in, get shelter information
-        if (AuthService.CurrentUser != null && AuthService.Token != null)
+
+        // Use the injected AuthService to get user and token info
+        var currentUser = AuthService.CurrentUser;
+        var token = AuthService.Token;
+
+        if (currentUser != null && token != null)
         {
             try
             {
-                // Get the shelter from FirestoreService using the injected service
-                shelter = await FirestoreService.GetShelterAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
-                
-                // If shelter couldn't be loaded, use a placeholder
-                if (shelter == null)
-                {
-                    shelter = new Shelter { 
-                        Id = AuthService.CurrentUser.ShelterId,
-                        Name = "Your Shelter" // Fallback placeholder
-                    };
-                }
+                shelter = await FirestoreService.GetShelterAsync(currentUser.ShelterId, token);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading shelter: {ex.Message}");
-                shelter = new Shelter { 
-                    Id = AuthService.CurrentUser.ShelterId,
-                    Name = "Your Shelter" // Fallback placeholder
-                };
             }
         }
         
         isLoading = false;
-        await InvokeAsync(StateHasChanged);
     }
-    
-    private async Task AuthStateChanged()
+
+    // This method now handles the event from the AuthenticationStateProvider
+    private async void HandleAuthStateChanged(Task<AuthenticationState> task)
     {
         await LoadShelterData();
-    }
-
-    protected override void OnInitialized()
-    {
-        AuthenticationStateProvider.AuthenticationStateChanged += HandleAuthStateChanged;
-    }
-
-    private async void HandleAuthStateChanged(Task<AuthenticationState> authState)
-    {
         await InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()
     {
-        AuthService.OnAuthStateChanged -= AuthStateChanged;
+        // Unsubscribe from the correct event
         AuthenticationStateProvider.AuthenticationStateChanged -= HandleAuthStateChanged;
     }
 }
