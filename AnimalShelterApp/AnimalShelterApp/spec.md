@@ -121,10 +121,10 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] Add weight validation (reasonable ranges for different species)
 
 #### b. Enhanced Medication Storage and Handling
-- [x] Add StorageInstructions field to Medication.cs (text box for "Refrigerate", "Room Temperature", etc.)
-- [x] Add HandlingInstructions field to Medication.cs (text box for "Shake Well", "Do Not Crush", etc.)
-- [x] Update medication forms to include these new fields
-- [x] Display storage/handling info in medication scheduling interface
+- [ ] Add StorageInstructions field to Medication.cs (text box for "Refrigerate", "Room Temperature", etc.)
+- [ ] Add HandlingInstructions field to Medication.cs (text box for "Shake Well", "Do Not Crush", etc.)
+- [ ] Update medication forms to include these new fields
+- [ ] Display storage/handling info in medication scheduling interface
 
 #### 1. Basic Recurring Patterns
 - [ ] Update ScheduledDose.cs to include RecurrenceType enum:
