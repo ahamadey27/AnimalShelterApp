@@ -122,6 +122,7 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] Display doses in clear, actionable groups: Overdue, Upcoming, and Completed.
 - [x] Each item must have a large, easy-to-tap "Log as Given" button.
 - [x] Clicking the button should create a `DoseLog` entry with the current timestamp and user's ID, then visually move the item to the "Completed" section in real-time.
+- [ ] Create an undo feature for medication given
 
 ### Step 5: Reporting
 - [ ] Create a simple page to generate medical reports.

@@ -949,5 +949,37 @@ namespace AnimalShelterApp.Services
             }
             return logs;
         }
+
+        /// <summary>
+        /// Deletes a dose log entry from Firestore (for undo functionality)
+        /// </summary>
+        public async Task<bool> DeleteDoseLogAsync(string shelterId, string logId, string token)
+        {
+            try
+            {
+                var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/logs/{logId}";
+                var request = new HttpRequestMessage(HttpMethod.Delete, url);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var response = await _httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("Successfully deleted dose log entry.");
+                    return true;
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Failed to delete dose log. Status: {response.StatusCode}, Response: {errorContent}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting dose log: {ex.Message}");
+                return false;
+            }
+        }
     }
 }
