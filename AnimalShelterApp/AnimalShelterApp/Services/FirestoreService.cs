@@ -865,7 +865,7 @@ namespace AnimalShelterApp.Services
                         compositeFilter = new
                         {
                             op = "AND",
-                            filters = new[]
+                            filters = new object[]
                             {
                                 new {
                                     fieldFilter = new {
@@ -880,14 +880,23 @@ namespace AnimalShelterApp.Services
                                         op = "LESS_THAN",
                                         value = new { timestampValue = endOfDay.ToString("o") }
                                     }
+                                },
+                                new {
+                                    fieldFilter = new {
+                                        field = new { fieldPath = "wasGiven" },
+                                        op = "EQUAL",
+                                        value = new { booleanValue = true }
+                                    }
                                 }
                             }
                         }
                     },
-                    // --- Start of Added Line ---
-                    // This forces Firestore to require the composite index
-                    orderBy = new[] { new { field = new { fieldPath = "timeAdministered" }, direction = "ASCENDING" } }
-                    // --- End of Added Line ---
+                    // Multiple orderBy fields to force composite index requirement
+                    orderBy = new object[] 
+                    { 
+                        new { field = new { fieldPath = "timeAdministered" }, direction = "ASCENDING" },
+                        new { field = new { fieldPath = "wasGiven" }, direction = "DESCENDING" }
+                    }
                 }
             };
 
@@ -904,6 +913,9 @@ namespace AnimalShelterApp.Services
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"Error getting dose logs: {response.StatusCode} - {errorContent}");
+                
+                // Log the full error response to help see the Firebase index creation link
+                Console.WriteLine($"Full error response: {errorContent}");
                 return logs;
             }
 
