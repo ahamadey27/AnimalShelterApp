@@ -36,6 +36,18 @@ namespace AnimalShelterApp.Shared
         // This allows for "soft-deleting" or archiving records of adopted animals.
         public bool IsActive { get; set; }
 
+        // The animal's weight value.
+        public decimal? Weight { get; set; }
 
+        // The unit of weight measurement (lbs or kg).
+        public string WeightUnit { get; set; } = "lbs"; // Default to pounds
+
+    }
+
+    // Enum for weight units
+    public enum WeightUnit
+    {
+        Pounds,
+        Kilograms
     }
 }

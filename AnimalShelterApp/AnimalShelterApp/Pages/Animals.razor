@@ -48,6 +48,7 @@ else
                     <th @onclick="@(() => SortBy("Breed"))">Breed @(SortIndicator("Breed"))</th>
                     <th @onclick="@(() => SortBy("Color"))">Color @(SortIndicator("Color"))</th>
                     <th @onclick="@(() => SortBy("DateOfBirth"))">Date of Birth @(SortIndicator("DateOfBirth"))</th>
+                    <th @onclick="@(() => SortBy("Weight"))">Weight @(SortIndicator("Weight"))</th>
                     <th class="text-end">Actions</th>
                 </tr>
             </thead>
@@ -79,6 +80,17 @@ else
                             else
                             {
                                 <span class="text-muted">Unknown</span>
+                            }
+                        </td>
+                        
+                        <td>
+                            @if (animal.Weight.HasValue)
+                            {
+                                @($"{animal.Weight:F1} {animal.WeightUnit}")
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
                             }
                         </td>
                         
@@ -227,6 +239,7 @@ else
             "Breed" => (sortDescending ? animals.OrderByDescending(a => a.Breed) : animals.OrderBy(a => a.Breed)).ToList(),
             "Color" => (sortDescending ? animals.OrderByDescending(a => a.Color) : animals.OrderBy(a => a.Color)).ToList(),
             "DateOfBirth" => (sortDescending ? animals.OrderByDescending(a => a.DateOfBirth) : animals.OrderBy(a => a.DateOfBirth)).ToList(),
+            "Weight" => (sortDescending ? animals.OrderByDescending(a => a.Weight ?? 0) : animals.OrderBy(a => a.Weight ?? 0)).ToList(),
             _ => animals
         };
     }

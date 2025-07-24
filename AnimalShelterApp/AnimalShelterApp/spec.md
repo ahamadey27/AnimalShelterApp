@@ -109,8 +109,74 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] If breed/species unavailable, user can continue to type and input data
 - [x] Add JSON data of species/breed
 
-**Add HTML/CSS to Animal Details to make animal info available
+**Add HTML/CSS to Animal Details to make animal info available**
 - [x] Mark if complete 
+
+**Improve and Expand Medication Schedule**
+
+#### a. Animal Weight Management
+- [x] Add Weight field to Animal.cs model (decimal, with units - lbs/kg)
+- [x] Update AnimalDetails.razor to display weight with unit toggle
+- [x] Update AnimalEditor.razor to include weight input with lbs/kg dropdown
+- [x] Add weight validation (reasonable ranges for different species)
+
+#### b. Enhanced Medication Storage and Handling
+- [ ] Add StorageInstructions field to Medication.cs (text box for "Refrigerate", "Room Temperature", etc.)
+- [ ] Add HandlingInstructions field to Medication.cs (text box for "Shake Well", "Do Not Crush", etc.)
+- [ ] Update medication forms to include these new fields
+- [ ] Display storage/handling info in medication scheduling interface
+
+#### 1. Basic Recurring Patterns
+- [ ] Update ScheduledDose.cs to include RecurrenceType enum:
+  - [ ] Daily (every day)
+  - [ ] EveryXDays (every 2 days, every 3 days, etc.)
+  - [ ] Weekly (specific days of week: Mon, Wed, Fri)
+  - [ ] BiWeekly (every 2 weeks)
+  - [ ] Monthly (once per month on specific date)
+  - [ ] AsNeeded (PRN - when required, no fixed schedule)
+- [ ] Add RecurrenceInterval field (int) for "every X days" patterns
+- [ ] Add DaysOfWeek field (List<DayOfWeek>) for weekly patterns
+- [ ] Update UI to show recurring pattern selection with intuitive options
+
+#### 2. Multiple Daily Doses - Fixed Times vs Interval Based
+- [ ] Add DosesPerDay field (int) to ScheduledDose.cs
+- [ ] Add TimeSlots field (List<string>) to replace single TimeOfDay
+- [ ] Create UI patterns for:
+  - [ ] **Fixed Times**: Specific times (8:00 AM, 2:00 PM, 8:00 PM)
+  - [ ] **Interval Based**: Every X hours (every 8 hours, every 6 hours)
+  - [ ] **Meal-Based**: With breakfast, lunch, dinner options
+- [ ] Add plus button (+) interface near time selection for adding multiple doses
+- [ ] Ensure dashboard handles multiple doses per day correctly
+
+#### 3. Start Date / End Date AND Indefinite Options
+- [ ] Add StartDate field (DateTime) to ScheduledDose.cs
+- [ ] Add EndDate field (DateTime?) to ScheduledDose.cs - nullable for indefinite
+- [ ] Add IsIndefinite field (bool) to ScheduledDose.cs
+- [ ] Add Duration field (int?) for "10 days", "2 weeks" options
+- [ ] Create floating calendar date picker component
+- [ ] Add UI toggle between "End Date" and "Indefinite" options
+- [ ] Update dashboard logic to respect start/end dates
+
+#### 4a. Enhanced Time Picker Widget
+- [ ] Create TimePickerComponent.razor with:
+  - [ ] Hour dropdown (1-12 for 12-hour format)
+  - [ ] Minutes dropdown in 15-minute increments (00, 15, 30, 45)
+  - [ ] AM/PM toggle buttons
+  - [ ] Floating window/modal design
+  - [ ] Convert to 24-hour format for storage
+  - [ ] Display in user-preferred format
+
+#### 4b. Food Relationship Dropdown
+- [ ] Add FoodRelationship enum to ScheduledDose.cs:
+  - [ ] WithFood
+  - [ ] WithoutFood  
+  - [ ] BeforeMeal
+  - [ ] AfterMeal
+  - [ ] DoesNotMatter (default)
+- [ ] Add FoodRelationship field to ScheduledDose.cs
+- [ ] Create dropdown component with clear labels
+- [ ] Display food relationship info in dashboard and reports
+- [ ] Include in medication administration reminders
 
 ### Step 3: Medication & Scheduling
 - [x] Create a simple UI to manage a list of common medications for the shelter.

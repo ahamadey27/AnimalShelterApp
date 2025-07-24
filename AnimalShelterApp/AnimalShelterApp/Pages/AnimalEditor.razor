@@ -119,6 +119,21 @@ else
                     <InputDate id="dob" @bind-Value="animal.DateOfBirth" class="form-control" />
                 </div>
                 
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <label for="weight" class="form-label">Weight</label>
+                        <InputNumber id="weight" @bind-Value="animal.Weight" class="form-control" placeholder="Enter weight" step="0.1" />
+                        <ValidationMessage For="@(() => animal.Weight)" />
+                    </div>
+                    <div class="col-md-4">
+                        <label for="weightUnit" class="form-label">Unit</label>
+                        <InputSelect id="weightUnit" @bind-Value="animal.WeightUnit" class="form-select">
+                            <option value="lbs">Pounds (lbs)</option>
+                            <option value="kg">Kilograms (kg)</option>
+                        </InputSelect>
+                    </div>
+                </div>
+                
                 <div class="form-check mb-3">
                     <InputCheckbox id="isActive" @bind-Value="animal.IsActive" class="form-check-input" />
                     <label class="form-check-label" for="isActive">
@@ -315,7 +330,7 @@ else
             // Add mode
             autoAssignId = true;
             manualId = "";
-            animal = new Animal { Id = "", IsActive = true, Name = "", Species = "", Breed = "", PhotoUrl = "" };
+            animal = new Animal { Id = "", IsActive = true, Name = "", Species = "", Breed = "", PhotoUrl = "", WeightUnit = "lbs" };
         }
 
         // Load breed and species data
@@ -359,6 +374,25 @@ else
     private async Task HandleValidSubmit()
     {
         errorMessage = null; // Clear previous errors
+        
+        // Validate weight
+        if (animal.Weight.HasValue)
+        {
+            if (animal.Weight <= 0)
+            {
+                errorMessage = "Weight must be greater than 0.";
+                return;
+            }
+            
+            // Set reasonable weight limits based on unit
+            var maxWeight = animal.WeightUnit == "kg" ? 200 : 440; // 200kg or 440lbs
+            if (animal.Weight > maxWeight)
+            {
+                errorMessage = $"Weight seems unusually high. Please verify (max: {maxWeight} {animal.WeightUnit}).";
+                return;
+            }
+        }
+        
         if (animal == null || AuthService.CurrentUser == null || string.IsNullOrEmpty(AuthService.CurrentUser.ShelterId) || string.IsNullOrEmpty(AuthService.Token))
         {
             errorMessage = "Cannot save animal. User or shelter information is missing.";
@@ -498,5 +532,25 @@ else
             await LoadScheduledDoses(); // Refresh list
             StateHasChanged();
         }
+    }
+
+    // Helper methods for weight conversion
+    private decimal ConvertWeight(decimal weight, string fromUnit, string toUnit)
+    {
+        if (fromUnit == toUnit) return weight;
+        
+        if (fromUnit == "lbs" && toUnit == "kg")
+            return Math.Round(weight * 0.453592m, 1);
+        
+        if (fromUnit == "kg" && toUnit == "lbs")
+            return Math.Round(weight * 2.20462m, 1);
+            
+        return weight;
+    }
+
+    private string GetWeightDisplay(decimal? weight, string unit)
+    {
+        if (!weight.HasValue) return "Not recorded";
+        return $"{weight:F1} {unit}";
     }
 }
