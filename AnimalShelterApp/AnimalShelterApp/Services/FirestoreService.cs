@@ -37,12 +37,18 @@ namespace AnimalShelterApp.Services
                 { "breed", new { stringValue = animal.Breed ?? "" } },
                 {"color", new {stringValue = animal.Color ?? ""}},
                 { "photoUrl", new { stringValue = animal.PhotoUrl ?? "" } },
-                { "isActive", new { booleanValue = animal.IsActive } }
+                { "isActive", new { booleanValue = animal.IsActive } },
+                { "weightUnit", new { stringValue = animal.WeightUnit ?? "lbs" } }
             };
 
             if (animal.DateOfBirth.HasValue)
             {
                 fields.Add("dateOfBirth", new { timestampValue = animal.DateOfBirth.Value.ToUniversalTime().ToString("o") });
+            }
+
+            if (animal.Weight.HasValue)
+            {
+                fields.Add("weight", new { doubleValue = (double)animal.Weight.Value });
             }
 
             return fields;
@@ -289,8 +295,21 @@ namespace AnimalShelterApp.Services
                                         : string.Empty,
                                     IsActive = fields.TryGetProperty("isActive", out var activeField)
                                         && activeField.TryGetProperty("booleanValue", out var boolField)
-                                        && boolField.GetBoolean()
+                                        && boolField.GetBoolean(),
+                                    WeightUnit = fields.TryGetProperty("weightUnit", out var weightUnitField)
+                                        ? weightUnitField.GetProperty("stringValue").GetString() ?? "lbs"
+                                        : "lbs"
                                 };
+
+                                // Parse weight if present
+                                if (fields.TryGetProperty("weight", out var weightField) &&
+                                    weightField.TryGetProperty("doubleValue", out var weightValueField))
+                                {
+                                    if (weightValueField.TryGetDouble(out double weightValue))
+                                    {
+                                        animal.Weight = (decimal)weightValue;
+                                    }
+                                }
 
                                 // Parse date of birth if present
                                 if (fields.TryGetProperty("dateOfBirth", out var dobField) &&
@@ -370,12 +389,28 @@ namespace AnimalShelterApp.Services
                         Breed = fields.TryGetProperty("breed", out var breedField)
                             ? breedField.GetProperty("stringValue").GetString() ?? string.Empty
                             : string.Empty,
+                        Color = fields.TryGetProperty("color", out var colorField)
+                            ? colorField.GetProperty("stringValue").GetString() ?? string.Empty
+                            : string.Empty,
                         PhotoUrl = fields.TryGetProperty("photoUrl", out var photoField)
                             ? photoField.GetProperty("stringValue").GetString() ?? string.Empty
                             : string.Empty,
                         IsActive = fields.TryGetProperty("isActive", out var activeField) &&
-                            activeField.TryGetProperty("booleanValue", out var boolField) && boolField.GetBoolean()
+                            activeField.TryGetProperty("booleanValue", out var boolField) && boolField.GetBoolean(),
+                        WeightUnit = fields.TryGetProperty("weightUnit", out var weightUnitField)
+                            ? weightUnitField.GetProperty("stringValue").GetString() ?? "lbs"
+                            : "lbs"
                     };
+
+                    // Parse weight if present
+                    if (fields.TryGetProperty("weight", out var weightField) &&
+                        weightField.TryGetProperty("doubleValue", out var weightValueField))
+                    {
+                        if (weightValueField.TryGetDouble(out double weightValue))
+                        {
+                            animal.Weight = (decimal)weightValue;
+                        }
+                    }
 
                     // Parse date of birth if present
                     if (fields.TryGetProperty("dateOfBirth", out var dobField) &&
