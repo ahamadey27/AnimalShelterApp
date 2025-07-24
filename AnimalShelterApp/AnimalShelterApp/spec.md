@@ -117,11 +117,11 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] On the "Animal Detail" page, build the UI to schedule medications. This will create `ScheduledDose` documents in Firestore.
 
 ### Step 4: The Dashboard & Core Logging Workflow
-- [ ] This is the most critical feature. Design a "Today's Medications" dashboard.
-- [ ] The page should query all `ScheduledDoses` for the current day.
-- [ ] Display doses in clear, actionable groups: Overdue, Upcoming, and Completed.
-- [ ] Each item must have a large, easy-to-tap "Log as Given" button.
-- [ ] Clicking the button should create a `DoseLog` entry with the current timestamp and user's ID, then visually move the item to the "Completed" section in real-time.
+- [x] This is the most critical feature. Design a "Today's Medications" dashboard.
+- [x] The page should query all `ScheduledDoses` for the current day.
+- [x] Display doses in clear, actionable groups: Overdue, Upcoming, and Completed.
+- [x] Each item must have a large, easy-to-tap "Log as Given" button.
+- [x] Clicking the button should create a `DoseLog` entry with the current timestamp and user's ID, then visually move the item to the "Completed" section in real-time.
 
 ### Step 5: Reporting
 - [ ] Create a simple page to generate medical reports.
