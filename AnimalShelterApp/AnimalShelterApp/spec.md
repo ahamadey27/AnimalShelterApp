@@ -125,11 +125,11 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] Create an undo feature for medication given
 
 ### Step 5: Reporting
-- [ ] Create a simple page to generate medical reports.
-- [ ] Include filters for Animal and a Date Range.
-- [ ] Fetch the relevant `DoseLog` entries from Firestore.
-- [ ] Display the results in a clean table.
-- [ ] Implement a "Download as CSV" button. You can use a library like `CsvHelper` to easily generate the file in C#.
+- [x] Create a simple page to generate medical reports.
+- [x] Include filters for Animal and a Date Range.
+- [x] Fetch the relevant `DoseLog` entries from Firestore.
+- [x] Display the results in a clean table.
+- [x] Implement a "Download as CSV" button. You can use a library like `CsvHelper` to easily generate the file in C#.
 
 ### Step 6: Global Error Handling
 - [ ] Implement a global exception handler in your Blazor app.
