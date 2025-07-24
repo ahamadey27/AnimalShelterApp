@@ -847,7 +847,7 @@ namespace AnimalShelterApp.Services
         }
 
         /// <summary>
-        /// Gets all dose logs for a specific date.
+        /// Gets all dose logs for a specific date...
         /// </summary>
         public async Task<List<DoseLog>> GetDoseLogsForDateAsync(string shelterId, DateTime date, string token)
         {
