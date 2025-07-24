@@ -1,0 +1,217 @@
+@page "/reports"
+@using AnimalShelterApp.Services
+@using AnimalShelterApp.Shared
+@using System.Globalization
+@using System.Text
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@inject FirestoreService FirestoreService
+@inject IJSRuntime JSRuntime
+
+<h3>Medical Reports</h3>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Generate Report</h5>
+        
+        <div class="row">
+            <div class="col-md-4">
+                <label class="form-label">Animal</label>
+                <select class="form-select" @bind="selectedAnimalId">
+                    <option value="">All Animals</option>
+                    @foreach (var animal in animals)
+                    {
+                        <option value="@animal.Id">@animal.Name</option>
+                    }
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">Start Date</label>
+                <input type="date" class="form-control" @bind="startDate" />
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">End Date</label>
+                <input type="date" class="form-control" @bind="endDate" />
+            </div>
+            
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary me-2" @onclick="GenerateReport" disabled="@isLoading">
+                    @if (isLoading)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                    }
+                    Generate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+@if (reportData.Any())
+{
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Report Results (@reportData.Count entries)</h5>
+            <button class="btn btn-success" @onclick="DownloadCsv">
+                <i class="bi bi-download"></i> Download CSV
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Animal</th>
+                            <th>Medication</th>
+                            <th>Dosage</th>
+                            <th>Given</th>
+                            <th>Administered By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in reportData.OrderBy(r => r.TimeAdministered))
+                        {
+                            <tr>
+                                <td>@entry.TimeAdministered.ToShortDateString()</td>
+                                <td>@entry.TimeAdministered.ToShortTimeString()</td>
+                                <td>@entry.AnimalName</td>
+                                <td>@entry.MedicationName</td>
+                                <td>@entry.Dosage</td>
+                                <td>
+                                    <span class="badge @(entry.WasGiven ? "bg-success" : "bg-danger")">
+                                        @(entry.WasGiven ? "Yes" : "No")
+                                    </span>
+                                </td>
+                                <td>@entry.AdministeredByName</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else if (!isLoading && hasSearched)
+{
+    <div class="alert alert-info">No dose logs found for the selected criteria.</div>
+}
+
+@code {
+    private List<Animal> animals = new();
+    private List<ReportEntry> reportData = new();
+    
+    private string selectedAnimalId = "";
+    private DateTime startDate = DateTime.Today.AddDays(-7);
+    private DateTime endDate = DateTime.Today;
+    
+    private bool isLoading = false;
+    private bool hasSearched = false;
+    private string? errorMessage;
+
+    public class ReportEntry
+    {
+        public DateTime TimeAdministered { get; set; }
+        public string AnimalName { get; set; } = "";
+        public string MedicationName { get; set; } = "";
+        public string Dosage { get; set; } = "";
+        public bool WasGiven { get; set; }
+        public string AdministeredByName { get; set; } = "";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthService.CurrentUser == null || string.IsNullOrEmpty(AuthService.Token))
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        try
+        {
+            animals = await FirestoreService.GetAnimalsAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to load animals: " + ex.Message;
+        }
+    }
+
+    private async Task GenerateReport()
+    {
+        if (AuthService.CurrentUser == null || string.IsNullOrEmpty(AuthService.Token)) return;
+
+        isLoading = true;
+        hasSearched = true;
+        errorMessage = null;
+        reportData.Clear();
+
+        try
+        {
+            var allLogs = new List<DoseLog>();
+
+            // Get logs for each day in the date range
+            for (var date = startDate; date <= endDate; date = date.AddDays(1))
+            {
+                var dailyLogs = await FirestoreService.GetDoseLogsForDateAsync(
+                    AuthService.CurrentUser.ShelterId, date, AuthService.Token);
+                allLogs.AddRange(dailyLogs);
+            }
+
+            // Filter by animal if selected
+            if (!string.IsNullOrEmpty(selectedAnimalId))
+            {
+                allLogs = allLogs.Where(l => l.AnimalId == selectedAnimalId).ToList();
+            }
+
+            // Get animal names
+            var animalDict = animals.ToDictionary(a => a.Id, a => a.Name);
+
+            // Transform to report entries
+            reportData = allLogs.Select(log => new ReportEntry
+            {
+                TimeAdministered = log.TimeAdministered,
+                AnimalName = animalDict.TryGetValue(log.AnimalId, out var animalName) ? animalName : "Unknown",
+                MedicationName = log.MedicationName,
+                Dosage = log.Dosage,
+                WasGiven = log.WasGiven,
+                AdministeredByName = "User" // You can enhance this to get actual user names
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to generate report: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task DownloadCsv()
+    {
+        if (!reportData.Any()) return;
+
+        var csv = new StringBuilder();
+        csv.AppendLine("Date,Time,Animal,Medication,Dosage,Given,Administered By");
+
+        foreach (var entry in reportData.OrderBy(r => r.TimeAdministered))
+        {
+            csv.AppendLine($"{entry.TimeAdministered:yyyy-MM-dd},{entry.TimeAdministered:HH:mm},{entry.AnimalName},{entry.MedicationName},{entry.Dosage},{(entry.WasGiven ? "Yes" : "No")},{entry.AdministeredByName}");
+        }
+
+        var fileName = $"medication-report-{DateTime.Now:yyyy-MM-dd}.csv";
+        var bytes = Encoding.UTF8.GetBytes(csv.ToString());
+        var base64 = Convert.ToBase64String(bytes);
+
+        await JSRuntime.InvokeVoidAsync("downloadFile", fileName, base64);
+    }
+}
