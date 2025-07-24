@@ -17,6 +17,8 @@ else
                 <th>Name</th>
                 <th>Default Dosage</th>
                 <th>Instructions</th>
+                <th>Storage</th>
+                <th>Handling</th>
                 <th></th>
             </tr>
         </thead>
@@ -28,6 +30,26 @@ else
                     <td>@med.DefaultDosage</td>
                     <td>@med.Instructions</td>
                     <td>
+                        @if (!string.IsNullOrEmpty(med.StorageInstructions))
+                        {
+                            <small class="text-muted">@med.StorageInstructions</small>
+                        }
+                        else
+                        {
+                            <small class="text-muted">-</small>
+                        }
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(med.HandlingInstructions))
+                        {
+                            <small class="text-muted">@med.HandlingInstructions</small>
+                        }
+                        else
+                        {
+                            <small class="text-muted">-</small>
+                        }
+                    </td>
+                    <td>
                         <button class="btn btn-sm btn-primary" @onclick="() => EditMedication(med)">Edit</button>
                         <button class="btn btn-sm btn-danger" @onclick="() => DeleteMedication(med.Id)">Delete</button>
                     </td>
@@ -38,14 +60,40 @@ else
 
     <h5>@(editingMedication == null ? "Add Medication" : "Edit Medication")</h5>
     <EditForm Model="editingMedication" OnValidSubmit="SaveMedication">
-        <InputText @bind-Value="editingMedication.Name" class="form-control" placeholder="Name" />
-        <InputText @bind-Value="editingMedication.DefaultDosage" class="form-control" placeholder="Default Dosage" />
-        <InputText @bind-Value="editingMedication.Instructions" class="form-control" placeholder="Instructions" />
-        <button class="btn btn-success mt-2" type="submit">Save</button>
-        @if (editingMedication != null)
-        {
-            <button class="btn btn-secondary mt-2 ms-2" type="button" @onclick="CancelEdit">Cancel</button>
-        }
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Medication Name</label>
+                <InputText @bind-Value="editingMedication!.Name" class="form-control" placeholder="Enter medication name" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Default Dosage</label>
+                <InputText @bind-Value="editingMedication!.DefaultDosage" class="form-control" placeholder="e.g., 250mg, 5ml" />
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Administration Instructions</label>
+            <InputTextArea @bind-Value="editingMedication!.Instructions" class="form-control" rows="2" placeholder="e.g., Give with food, twice daily" />
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Storage Instructions</label>
+                <InputTextArea @bind-Value="editingMedication!.StorageInstructions" class="form-control" rows="2" placeholder="e.g., Refrigerate, Store at room temperature, Keep in dark place" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Handling Instructions</label>
+                <InputTextArea @bind-Value="editingMedication!.HandlingInstructions" class="form-control" rows="2" placeholder="e.g., Shake well before use, Do not crush, Use within 30 days" />
+            </div>
+        </div>
+        
+        <div class="d-flex gap-2">
+            <button class="btn btn-success" type="submit">Save Medication</button>
+            @if (editingMedication != null && !string.IsNullOrEmpty(editingMedication.Id))
+            {
+                <button class="btn btn-secondary" type="button" @onclick="CancelEdit">Cancel</button>
+            }
+        </div>
     </EditForm>
 }
 
@@ -77,7 +125,9 @@ else
             Id = med.Id,
             Name = med.Name,
             DefaultDosage = med.DefaultDosage,
-            Instructions = med.Instructions
+            Instructions = med.Instructions,
+            StorageInstructions = med.StorageInstructions,
+            HandlingInstructions = med.HandlingInstructions
         };
     }
 

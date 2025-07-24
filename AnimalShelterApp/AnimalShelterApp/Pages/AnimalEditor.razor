@@ -186,8 +186,30 @@ else
                     <tbody>
                         @foreach (var dose in scheduledDoses)
                         {
+                            var medication = medications?.FirstOrDefault(m => m.Id == dose.MedicationId);
                             <tr>
-                                <td>@(medications?.FirstOrDefault(m => m.Id == dose.MedicationId)?.Name ?? "Unknown")</td>
+                                <td>
+                                    <div>
+                                        <strong>@(medication?.Name ?? "Unknown")</strong>
+                                        @if (medication != null && (!string.IsNullOrEmpty(medication.StorageInstructions) || !string.IsNullOrEmpty(medication.HandlingInstructions)))
+                                        {
+                                            <div class="mt-1">
+                                                @if (!string.IsNullOrEmpty(medication.StorageInstructions))
+                                                {
+                                                    <small class="text-primary d-block">
+                                                        <i class="oi oi-home" title="Storage"></i> @medication.StorageInstructions
+                                                    </small>
+                                                }
+                                                @if (!string.IsNullOrEmpty(medication.HandlingInstructions))
+                                                {
+                                                    <small class="text-warning d-block">
+                                                        <i class="oi oi-warning" title="Handling"></i> @medication.HandlingInstructions
+                                                    </small>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </td>
                                 <td>@dose.Dosage</td>
                                 <td>@dose.TimeOfDay</td>
                                 <td>@dose.Notes</td>
@@ -220,6 +242,42 @@ else
                                 }
                             </InputSelect>
                             <ValidationMessage For="@(() => newDose.MedicationId)" />
+                            
+                            @* Display medication details when selected *@
+                            @if (!string.IsNullOrEmpty(newDose.MedicationId) && medications != null)
+                            {
+                                var selectedMed = medications.FirstOrDefault(m => m.Id == newDose.MedicationId);
+                                if (selectedMed != null)
+                                {
+                                    <div class="mt-2 p-3 bg-light rounded">
+                                        <h6 class="mb-2">@selectedMed.Name - Important Information</h6>
+                                        @if (!string.IsNullOrEmpty(selectedMed.Instructions))
+                                        {
+                                            <div class="mb-2">
+                                                <strong>Instructions:</strong> @selectedMed.Instructions
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(selectedMed.StorageInstructions))
+                                        {
+                                            <div class="mb-2 text-primary">
+                                                <i class="oi oi-home"></i> <strong>Storage:</strong> @selectedMed.StorageInstructions
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(selectedMed.HandlingInstructions))
+                                        {
+                                            <div class="text-warning">
+                                                <i class="oi oi-warning"></i> <strong>Handling:</strong> @selectedMed.HandlingInstructions
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(selectedMed.DefaultDosage))
+                                        {
+                                            <div class="mt-2">
+                                                <small class="text-muted">Default Dosage: @selectedMed.DefaultDosage</small>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Dosage</label>

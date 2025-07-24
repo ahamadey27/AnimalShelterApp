@@ -22,5 +22,11 @@ namespace AnimalShelterApp.Shared
         // General instructions for administering the medication, such as "Give with food".
         public string Instructions { get; set; } = "";
 
+        // Storage instructions for the medication (e.g., "Refrigerate", "Store at room temperature", "Keep in dark place").
+        public string StorageInstructions { get; set; } = "";
+
+        // Handling instructions for the medication (e.g., "Shake well before use", "Do not crush", "Use within 30 days of opening").
+        public string HandlingInstructions { get; set; } = "";
+
     }
 }

@@ -627,7 +627,9 @@ namespace AnimalShelterApp.Services
                             Id = doc.GetProperty("name").GetString()?.Split('/').Last() ?? "",
                             Name = fields.TryGetProperty("name", out var nameField) ? nameField.GetProperty("stringValue").GetString() ?? "" : "",
                             DefaultDosage = fields.TryGetProperty("defaultDosage", out var dosageField) ? dosageField.GetProperty("stringValue").GetString() ?? "" : "",
-                            Instructions = fields.TryGetProperty("instructions", out var instrField) ? instrField.GetProperty("stringValue").GetString() ?? "" : ""
+                            Instructions = fields.TryGetProperty("instructions", out var instrField) ? instrField.GetProperty("stringValue").GetString() ?? "" : "",
+                            StorageInstructions = fields.TryGetProperty("storageInstructions", out var storageField) ? storageField.GetProperty("stringValue").GetString() ?? "" : "",
+                            HandlingInstructions = fields.TryGetProperty("handlingInstructions", out var handlingField) ? handlingField.GetProperty("stringValue").GetString() ?? "" : ""
                         };
                         medications.Add(med);
                     }
@@ -644,7 +646,9 @@ namespace AnimalShelterApp.Services
                 {
                     name = new { stringValue = med.Name ?? "" },
                     defaultDosage = new { stringValue = med.DefaultDosage ?? "" },
-                    instructions = new { stringValue = med.Instructions ?? "" }
+                    instructions = new { stringValue = med.Instructions ?? "" },
+                    storageInstructions = new { stringValue = med.StorageInstructions ?? "" },
+                    handlingInstructions = new { stringValue = med.HandlingInstructions ?? "" }
                 }
             };
             var request = new HttpRequestMessage(HttpMethod.Post, url)
@@ -666,7 +670,9 @@ namespace AnimalShelterApp.Services
                 {
                     name = new { stringValue = med.Name ?? "" },
                     defaultDosage = new { stringValue = med.DefaultDosage ?? "" },
-                    instructions = new { stringValue = med.Instructions ?? "" }
+                    instructions = new { stringValue = med.Instructions ?? "" },
+                    storageInstructions = new { stringValue = med.StorageInstructions ?? "" },
+                    handlingInstructions = new { stringValue = med.HandlingInstructions ?? "" }
                 }
             };
             var request = new HttpRequestMessage(new HttpMethod("PATCH"), url)

@@ -105,8 +105,30 @@ else
             <tbody>
                 @foreach (var dose in scheduledDoses)
                 {
+                    var medication = medications?.FirstOrDefault(m => m.Id == dose.MedicationId);
                     <tr>
-                        <td>@(medications?.FirstOrDefault(m => m.Id == dose.MedicationId)?.Name ?? "Unknown")</td>
+                        <td>
+                            <div>
+                                <strong>@(medication?.Name ?? "Unknown")</strong>
+                                @if (medication != null && (!string.IsNullOrEmpty(medication.StorageInstructions) || !string.IsNullOrEmpty(medication.HandlingInstructions)))
+                                {
+                                    <div class="mt-1">
+                                        @if (!string.IsNullOrEmpty(medication.StorageInstructions))
+                                        {
+                                            <small class="text-primary d-block">
+                                                <i class="oi oi-home" title="Storage"></i> @medication.StorageInstructions
+                                            </small>
+                                        }
+                                        @if (!string.IsNullOrEmpty(medication.HandlingInstructions))
+                                        {
+                                            <small class="text-warning d-block">
+                                                <i class="oi oi-warning" title="Handling"></i> @medication.HandlingInstructions
+                                            </small>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </td>
                         <td>@dose.Dosage</td>
                         <td>@dose.TimeOfDay</td>
                         <td>@dose.Notes</td>
