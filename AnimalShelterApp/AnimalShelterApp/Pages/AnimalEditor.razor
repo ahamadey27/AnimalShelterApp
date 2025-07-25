@@ -66,7 +66,7 @@ else
                 <div class="mb-3">
                     <label for="animalId" class="form-label">Animal ID</label>
                     <div class="input-group">
-                        <InputText id="animalId" @bind-Value="manualId" class="form-control" placeholder="Enter animal ID manually" disabled="@autoAssignId" />
+                        <InputText id="animalId" @bind-Value="manualId" class="form-control" placeholder="Enter animal ID manually" disabled="@autoAssignId" @onkeypress="HandleKeyPress" />
                         <span class="input-group-text">
                             <InputCheckbox id="autoAssignId" @bind-Value="autoAssignId" class="form-check-input" />
                             <label class="form-check-label ms-2" for="autoAssignId">Auto Assign</label>
@@ -122,7 +122,7 @@ else
                 <div class="row mb-3">
                     <div class="col-md-8">
                         <label for="weight" class="form-label">Weight</label>
-                        <InputNumber id="weight" @bind-Value="animal.Weight" class="form-control" placeholder="Enter weight" step="0.1" />
+                        <InputNumber id="weight" @bind-Value="animal.Weight" class="form-control" placeholder="Enter weight" step="0.1" @onkeypress="HandleKeyPress" />
                         <ValidationMessage For="@(() => animal.Weight)" />
                     </div>
                     <div class="col-md-4">
@@ -423,7 +423,7 @@ else
                             {
                                 <div class="mb-3">
                                     <label class="form-label">Every how many days?</label>
-                                    <InputNumber @bind-Value="newDose.RecurrenceInterval" class="form-control" min="1" max="30" />
+                                    <InputNumber @bind-Value="newDose.RecurrenceInterval" class="form-control" min="1" max="30" @onkeypress="HandleKeyPress" />
                                     <div class="form-text">Enter a number between 1-30 days</div>
                                 </div>
                             }
