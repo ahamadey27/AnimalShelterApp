@@ -219,7 +219,7 @@ else
                         {
                             @if (dose.TimeSlots.Count == 1)
                             {
-                                <span>@dose.TimeSlots.First()</span>
+                                <span>@FormatTime12Hour(dose.TimeSlots.First())</span>
                             }
                             else
                             {
@@ -229,14 +229,14 @@ else
                                 <div class="mt-1">
                                     @foreach (var timeSlot in dose.TimeSlots)
                                     {
-                                        <small class="d-block text-muted">@timeSlot</small>
+                                        <small class="d-block text-muted">@FormatTime12Hour(timeSlot)</small>
                                     }
                                 </div>
                             }
                         }
                         else
                         {
-                            <span>@dose.TimeOfDay</span>
+                            <span>@FormatTime12Hour(dose.TimeOfDay)</span>
                         }
                         
                         @if (dose.FoodRelationship != FoodRelationship.DoesNotMatter)
@@ -958,6 +958,20 @@ else
             FoodRelationship.AfterMeal => "Give 30 minutes after feeding to aid digestion",
             _ => "No specific food requirements"
         };
+    }
+
+    // Helper method to convert 24-hour time to 12-hour AM/PM format
+    private string FormatTime12Hour(string time24Hour)
+    {
+        if (string.IsNullOrEmpty(time24Hour)) return "";
+        
+        if (TimeSpan.TryParse(time24Hour, out TimeSpan timeSpan))
+        {
+            var dateTime = DateTime.Today.Add(timeSpan);
+            return dateTime.ToString("h:mm tt"); // h:mm tt gives "8:00 PM" format
+        }
+        
+        return time24Hour; // Return original if parsing fails
     }
 
     // Edit and Delete methods for scheduled doses
