@@ -41,6 +41,20 @@ namespace AnimalShelterApp.Shared
         // For "Weekly" pattern: which days of the week (e.g., Monday, Wednesday, Friday)
         public List<DayOfWeek> DaysOfWeek { get; set; } = new List<DayOfWeek>();
 
+        // === MULTIPLE DAILY DOSES SUPPORT ===
+        
+        // Number of doses per day (1 = single dose, 2+ = multiple doses)
+        public int DosesPerDay { get; set; } = 1;
+        
+        // Multiple time slots for doses throughout the day (replaces single TimeOfDay for multi-dose)
+        // Examples: ["08:00", "14:00", "20:00"] for 3x daily
+        public List<string> TimeSlots { get; set; } = new List<string>();
+        
+        // === FOOD RELATIONSHIP ===
+        
+        // How this medication should be given in relation to food
+        public FoodRelationship FoodRelationship { get; set; } = FoodRelationship.DoesNotMatter;
+
     }
 
     // Enum for different types of recurring medication patterns
@@ -52,5 +66,15 @@ namespace AnimalShelterApp.Shared
         BiWeekly,       // Every 2 weeks
         Monthly,        // Once per month on specific date
         AsNeeded        // PRN - when required, no fixed schedule
+    }
+
+    // Enum for medication relationship to food
+    public enum FoodRelationship
+    {
+        DoesNotMatter,  // No specific food requirement (default)
+        WithFood,       // Must be given with food
+        WithoutFood,    // Must be given on empty stomach
+        BeforeMeal,     // Give 30-60 minutes before eating
+        AfterMeal       // Give after eating
     }
 }

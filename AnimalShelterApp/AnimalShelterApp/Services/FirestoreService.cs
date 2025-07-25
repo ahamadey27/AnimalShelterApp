@@ -704,6 +704,9 @@ namespace AnimalShelterApp.Services
             // Convert DaysOfWeek list to strings for Firestore
             var daysOfWeekStrings = dose.DaysOfWeek?.Select(d => d.ToString()).ToArray() ?? Array.Empty<string>();
             
+            // Convert TimeSlots list to array for Firestore
+            var timeSlotsArray = dose.TimeSlots?.ToArray() ?? Array.Empty<string>();
+            
             var payload = new
             {
                 fields = new
@@ -715,7 +718,11 @@ namespace AnimalShelterApp.Services
                     notes = new { stringValue = dose.Notes ?? "" },
                     recurrenceType = new { stringValue = dose.RecurrenceType.ToString() },
                     recurrenceInterval = new { integerValue = dose.RecurrenceInterval.ToString() },
-                    daysOfWeek = new { arrayValue = new { values = daysOfWeekStrings.Select(d => new { stringValue = d }).ToArray() } }
+                    daysOfWeek = new { arrayValue = new { values = daysOfWeekStrings.Select(d => new { stringValue = d }).ToArray() } },
+                    // New fields for Enhanced Scheduling Options
+                    dosesPerDay = new { integerValue = dose.DosesPerDay.ToString() },
+                    timeSlots = new { arrayValue = new { values = timeSlotsArray.Select(t => new { stringValue = t }).ToArray() } },
+                    foodRelationship = new { stringValue = dose.FoodRelationship.ToString() }
                 }
             };
 
@@ -796,6 +803,21 @@ namespace AnimalShelterApp.Services
                         }
                     }
 
+                    // Parse TimeSlots array
+                    var timeSlots = new List<string>();
+                    if (fields.TryGetProperty("timeSlots", out var timeSlotsProp) && 
+                        timeSlotsProp.TryGetProperty("arrayValue", out var timeSlotsArray) &&
+                        timeSlotsArray.TryGetProperty("values", out var timeValues))
+                    {
+                        foreach (var timeElement in timeValues.EnumerateArray())
+                        {
+                            if (timeElement.TryGetProperty("stringValue", out var timeStr))
+                            {
+                                timeSlots.Add(timeStr.GetString() ?? "");
+                            }
+                        }
+                    }
+
                     var dose = new ScheduledDose
                     {
                         Id = doc.GetProperty("name").GetString()?.Split('/').Last() ?? "",
@@ -810,7 +832,15 @@ namespace AnimalShelterApp.Services
                         RecurrenceInterval = fields.TryGetProperty("recurrenceInterval", out var intervalProp) && 
                                            int.TryParse(intervalProp.GetProperty("integerValue").GetString(), out var interval) 
                                            ? interval : 1,
-                        DaysOfWeek = daysOfWeek
+                        DaysOfWeek = daysOfWeek,
+                        // New Enhanced Scheduling fields
+                        DosesPerDay = fields.TryGetProperty("dosesPerDay", out var dosesPerDayProp) && 
+                                    int.TryParse(dosesPerDayProp.GetProperty("integerValue").GetString(), out var dosesPerDay) 
+                                    ? dosesPerDay : 1,
+                        TimeSlots = timeSlots,
+                        FoodRelationship = fields.TryGetProperty("foodRelationship", out var foodProp) && 
+                                         Enum.TryParse<FoodRelationship>(foodProp.GetProperty("stringValue").GetString(), out var foodRelationship) 
+                                         ? foodRelationship : FoodRelationship.DoesNotMatter
                     };
                     doses.Add(dose);
                 }
@@ -873,6 +903,21 @@ namespace AnimalShelterApp.Services
                         }
                     }
 
+                    // Parse TimeSlots array
+                    var timeSlots = new List<string>();
+                    if (fields.TryGetProperty("timeSlots", out var timeSlotsProp) && 
+                        timeSlotsProp.TryGetProperty("arrayValue", out var timeSlotsArray) &&
+                        timeSlotsArray.TryGetProperty("values", out var timeValues))
+                    {
+                        foreach (var timeElement in timeValues.EnumerateArray())
+                        {
+                            if (timeElement.TryGetProperty("stringValue", out var timeStr))
+                            {
+                                timeSlots.Add(timeStr.GetString() ?? "");
+                            }
+                        }
+                    }
+
                     var dose = new ScheduledDose
                     {
                         Id = doc.GetProperty("name").GetString()?.Split('/').Last() ?? "",
@@ -887,7 +932,15 @@ namespace AnimalShelterApp.Services
                         RecurrenceInterval = fields.TryGetProperty("recurrenceInterval", out var intervalProp) && 
                                            int.TryParse(intervalProp.GetProperty("integerValue").GetString(), out var interval) 
                                            ? interval : 1,
-                        DaysOfWeek = daysOfWeek
+                        DaysOfWeek = daysOfWeek,
+                        // New Enhanced Scheduling fields
+                        DosesPerDay = fields.TryGetProperty("dosesPerDay", out var dosesPerDayProp) && 
+                                    int.TryParse(dosesPerDayProp.GetProperty("integerValue").GetString(), out var dosesPerDay) 
+                                    ? dosesPerDay : 1,
+                        TimeSlots = timeSlots,
+                        FoodRelationship = fields.TryGetProperty("foodRelationship", out var foodProp) && 
+                                         Enum.TryParse<FoodRelationship>(foodProp.GetProperty("stringValue").GetString(), out var foodRelationship) 
+                                         ? foodRelationship : FoodRelationship.DoesNotMatter
                     };
                     doses.Add(dose);
                 }

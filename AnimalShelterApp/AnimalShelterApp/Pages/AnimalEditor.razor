@@ -212,7 +212,42 @@ else
                                     </div>
                                 </td>
                                 <td>@dose.Dosage</td>
-                                <td>@dose.TimeOfDay</td>
+                                <td>
+                    <div>
+                        @if (dose.TimeSlots != null && dose.TimeSlots.Any())
+                        {
+                            @if (dose.TimeSlots.Count == 1)
+                            {
+                                <span>@dose.TimeSlots.First()</span>
+                            }
+                            else
+                            {
+                                <div>
+                                    <span class="badge bg-secondary">@dose.DosesPerDay doses/day</span>
+                                </div>
+                                <div class="mt-1">
+                                    @foreach (var timeSlot in dose.TimeSlots)
+                                    {
+                                        <small class="d-block text-muted">@timeSlot</small>
+                                    }
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <span>@dose.TimeOfDay</span>
+                        }
+                        
+                        @if (dose.FoodRelationship != FoodRelationship.DoesNotMatter)
+                        {
+                            <div class="mt-1">
+                                <small class="badge bg-warning text-dark">
+                                    @dose.FoodRelationship.ToString().Replace("Food", " Food")
+                                </small>
+                            </div>
+                        }
+                    </div>
+                </td>
                                 <td>
                                     <div>
                                         <span class="badge bg-info">@GetRecurrenceDisplayText(dose)</span>
@@ -302,10 +337,58 @@ else
                             <InputText @bind-Value="newDose.Dosage" class="form-control" />
                             <ValidationMessage For="@(() => newDose.Dosage)" />
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Time of Day (e.g., 08:00)</label>
-                            <InputText @bind-Value="newDose.TimeOfDay" class="form-control" />
-                            <ValidationMessage For="@(() => newDose.TimeOfDay)" />
+                        <!-- Enhanced Scheduling Options -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">Dosing Schedule</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Number of Doses Per Day</label>
+                                <InputNumber @bind-Value="newDose.DosesPerDay" class="form-control" min="1" max="6" @onchange="OnDosesPerDayChanged" />
+                                <div class="form-text">Enter 1-6 doses per day</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Time Slots</label>
+                                @if (newDose.TimeSlots.Any())
+                                {
+                                    @for (int i = 0; i < newDose.TimeSlots.Count; i++)
+                                    {
+                                        var index = i; // Capture for closure
+                                        <div class="input-group mb-2">
+                                            <span class="input-group-text">@(index + 1).</span>
+                                            <input type="time" class="form-control" 
+                                                   value="@newDose.TimeSlots[index]" 
+                                                   @onchange="@((ChangeEventArgs e) => UpdateTimeSlot(index, e.Value?.ToString() ?? ""))" />
+                                            @if (newDose.TimeSlots.Count > 1)
+                                            {
+                                                <button type="button" class="btn btn-outline-danger" @onclick="@(() => RemoveTimeSlot(index))">
+                                                    <span class="oi oi-x"></span>
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                }
+                                @if (newDose.TimeSlots.Count < newDose.DosesPerDay)
+                                {
+                                    <button type="button" class="btn btn-outline-primary btn-sm" @onclick="AddTimeSlot">
+                                        <span class="oi oi-plus"></span> Add Time Slot
+                                    </button>
+                                }
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Food Relationship</label>
+                                <InputSelect @bind-Value="newDose.FoodRelationship" class="form-select">
+                                    <option value="@FoodRelationship.DoesNotMatter">Does Not Matter</option>
+                                    <option value="@FoodRelationship.WithFood">With Food</option>
+                                    <option value="@FoodRelationship.WithoutFood">Without Food (Empty Stomach)</option>
+                                    <option value="@FoodRelationship.BeforeMeal">Before Meal (30 min before)</option>
+                                    <option value="@FoodRelationship.AfterMeal">After Meal (30 min after)</option>
+                                </InputSelect>
+                                <div class="form-text">
+                                    @GetFoodRelationshipDescription(newDose.FoodRelationship)
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- Recurring Pattern Section -->
@@ -430,7 +513,12 @@ else
     private List<string> breedSuggestions = new();
     private List<Medication>? medications;
     private List<ScheduledDose>? scheduledDoses;
-    private ScheduledDose newDose = new();
+    private ScheduledDose newDose = new() 
+    { 
+        DosesPerDay = 1, 
+        TimeSlots = new List<string> { "08:00" },
+        FoodRelationship = FoodRelationship.DoesNotMatter
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -665,7 +753,12 @@ else
         var success = await FirestoreService.CreateScheduledDoseAsync(AuthService.CurrentUser.ShelterId, newDose, AuthService.Token);
         if (success)
         {
-            newDose = new(); // Reset form
+            newDose = new() 
+            { 
+                DosesPerDay = 1, 
+                TimeSlots = new List<string> { "08:00" },
+                FoodRelationship = FoodRelationship.DoesNotMatter
+            }; // Reset form
             await LoadScheduledDoses(); // Refresh list
             StateHasChanged();
         }
@@ -764,5 +857,67 @@ else
         });
         
         return string.Join(", ", dayAbbreviations);
+    }
+
+    // Enhanced Scheduling Options methods
+    private void OnDosesPerDayChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var dosesPerDay))
+        {
+            newDose.DosesPerDay = Math.Max(1, Math.Min(6, dosesPerDay)); // Clamp between 1-6
+            
+            // Adjust TimeSlots list to match DosesPerDay
+            while (newDose.TimeSlots.Count < newDose.DosesPerDay)
+            {
+                newDose.TimeSlots.Add("08:00"); // Default time
+            }
+            while (newDose.TimeSlots.Count > newDose.DosesPerDay)
+            {
+                newDose.TimeSlots.RemoveAt(newDose.TimeSlots.Count - 1);
+            }
+            
+            StateHasChanged();
+        }
+    }
+
+    private void AddTimeSlot()
+    {
+        if (newDose.TimeSlots.Count < newDose.DosesPerDay)
+        {
+            newDose.TimeSlots.Add("08:00");
+            StateHasChanged();
+        }
+    }
+
+    private void RemoveTimeSlot(int index)
+    {
+        if (index >= 0 && index < newDose.TimeSlots.Count && newDose.TimeSlots.Count > 1)
+        {
+            newDose.TimeSlots.RemoveAt(index);
+            // Adjust DosesPerDay to match
+            newDose.DosesPerDay = newDose.TimeSlots.Count;
+            StateHasChanged();
+        }
+    }
+
+    private void UpdateTimeSlot(int index, string timeValue)
+    {
+        if (index >= 0 && index < newDose.TimeSlots.Count)
+        {
+            newDose.TimeSlots[index] = timeValue;
+        }
+    }
+
+    private string GetFoodRelationshipDescription(FoodRelationship foodRelationship)
+    {
+        return foodRelationship switch
+        {
+            FoodRelationship.DoesNotMatter => "Can be given with or without food",
+            FoodRelationship.WithFood => "Should be given with food to reduce stomach upset",
+            FoodRelationship.WithoutFood => "Should be given on an empty stomach for best absorption",
+            FoodRelationship.BeforeMeal => "Give 30 minutes before feeding for optimal effectiveness",
+            FoodRelationship.AfterMeal => "Give 30 minutes after feeding to aid digestion",
+            _ => "No specific food requirements"
+        };
     }
 }
