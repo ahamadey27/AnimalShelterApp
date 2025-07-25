@@ -127,16 +127,16 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] Display storage/handling info in medication scheduling interface
 
 #### 1. Basic Recurring Patterns
-- [ ] Update ScheduledDose.cs to include RecurrenceType enum:
-  - [ ] Daily (every day)
-  - [ ] EveryXDays (every 2 days, every 3 days, etc.)
-  - [ ] Weekly (specific days of week: Mon, Wed, Fri)
-  - [ ] BiWeekly (every 2 weeks)
-  - [ ] Monthly (once per month on specific date)
-  - [ ] AsNeeded (PRN - when required, no fixed schedule)
-- [ ] Add RecurrenceInterval field (int) for "every X days" patterns
-- [ ] Add DaysOfWeek field (List<DayOfWeek>) for weekly patterns
-- [ ] Update UI to show recurring pattern selection with intuitive options
+- [x] Update ScheduledDose.cs to include RecurrenceType enum:
+  - [x] Daily (every day)
+  - [x] EveryXDays (every 2 days, every 3 days, etc.)
+  - [x] Weekly (specific days of week: Mon, Wed, Fri)
+  - [x] BiWeekly (every 2 weeks)
+  - [x] Monthly (once per month on specific date)
+  - [x] AsNeeded (PRN - when required, no fixed schedule)
+- [x] Add RecurrenceInterval field (int) for "every X days" patterns
+- [x] Add DaysOfWeek field (List<DayOfWeek>) for weekly patterns
+- [x] Update UI to show recurring pattern selection with intuitive options
 
 #### 2. Multiple Daily Doses - Fixed Times vs Interval Based
 - [ ] Add DosesPerDay field (int) to ScheduledDose.cs

@@ -32,5 +32,25 @@ namespace AnimalShelterApp.Shared
         // e.g., "Crush and mix with wet food".
         public string Notes { get; set; } = string.Empty;
 
+        // The type of recurrence pattern for this medication
+        public RecurrenceType RecurrenceType { get; set; } = RecurrenceType.Daily;
+
+        // For "EveryXDays" pattern: how many days between doses (e.g., 2 for every other day)
+        public int RecurrenceInterval { get; set; } = 1;
+
+        // For "Weekly" pattern: which days of the week (e.g., Monday, Wednesday, Friday)
+        public List<DayOfWeek> DaysOfWeek { get; set; } = new List<DayOfWeek>();
+
+    }
+
+    // Enum for different types of recurring medication patterns
+    public enum RecurrenceType
+    {
+        Daily,          // Every day
+        EveryXDays,     // Every X days (every 2 days, every 3 days, etc.)
+        Weekly,         // Specific days of the week (Mon, Wed, Fri)
+        BiWeekly,       // Every 2 weeks
+        Monthly,        // Once per month on specific date
+        AsNeeded        // PRN - when required, no fixed schedule
     }
 }

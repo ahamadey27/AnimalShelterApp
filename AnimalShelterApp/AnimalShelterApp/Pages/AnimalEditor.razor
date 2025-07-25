@@ -289,6 +289,67 @@ else
                             <InputText @bind-Value="newDose.TimeOfDay" class="form-control" />
                             <ValidationMessage For="@(() => newDose.TimeOfDay)" />
                         </div>
+                        
+                        <!-- Recurring Pattern Section -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">Recurring Pattern</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Schedule Type</label>
+                                <InputSelect @bind-Value="newDose.RecurrenceType" class="form-select" @onchange="OnRecurrenceTypeChanged">
+                                    <option value="@RecurrenceType.Daily">Daily (every day)</option>
+                                    <option value="@RecurrenceType.EveryXDays">Every X Days</option>
+                                    <option value="@RecurrenceType.Weekly">Weekly (specific days)</option>
+                                    <option value="@RecurrenceType.BiWeekly">Bi-Weekly (every 2 weeks)</option>
+                                    <option value="@RecurrenceType.Monthly">Monthly</option>
+                                    <option value="@RecurrenceType.AsNeeded">As Needed (PRN)</option>
+                                </InputSelect>
+                            </div>
+                            
+                            @if (newDose.RecurrenceType == RecurrenceType.EveryXDays)
+                            {
+                                <div class="mb-3">
+                                    <label class="form-label">Every how many days?</label>
+                                    <InputNumber @bind-Value="newDose.RecurrenceInterval" class="form-control" min="1" max="30" />
+                                    <div class="form-text">Enter a number between 1-30 days</div>
+                                </div>
+                            }
+                            
+                            @if (newDose.RecurrenceType == RecurrenceType.Weekly)
+                            {
+                                <div class="mb-3">
+                                    <label class="form-label">Days of the Week</label>
+                                    <div class="row">
+                                        @foreach (DayOfWeek day in Enum.GetValues<DayOfWeek>())
+                                        {
+                                            <div class="col-md-4 col-6 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           checked="@(newDose.DaysOfWeek.Contains(day))"
+                                                           @onchange="@((ChangeEventArgs e) => ToggleDayOfWeek(day, (bool)e.Value!))" 
+                                                           id="day-@day" />
+                                                    <label class="form-check-label" for="day-@day">
+                                                        @day.ToString()
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                    @if (!newDose.DaysOfWeek.Any())
+                                    {
+                                        <div class="form-text text-warning">Please select at least one day of the week</div>
+                                    }
+                                </div>
+                            }
+                            
+                            @if (newDose.RecurrenceType == RecurrenceType.AsNeeded)
+                            {
+                                <div class="alert alert-info">
+                                    <i class="oi oi-info"></i> This medication will be available for "as needed" (PRN) administration and won't appear in daily schedules.
+                                </div>
+                            }
+                        </div>
+                        
                         <div class="mb-3">
                             <label class="form-label">Notes</label>
                             <InputTextArea @bind-Value="newDose.Notes" class="form-control" />
@@ -610,5 +671,42 @@ else
     {
         if (!weight.HasValue) return "Not recorded";
         return $"{weight:F1} {unit}";
+    }
+
+    // Helper methods for recurring patterns
+    private void OnRecurrenceTypeChanged(ChangeEventArgs e)
+    {
+        if (Enum.TryParse<RecurrenceType>(e.Value?.ToString(), out var recurrenceType))
+        {
+            newDose.RecurrenceType = recurrenceType;
+            
+            // Reset related fields when changing recurrence type
+            if (recurrenceType != RecurrenceType.EveryXDays)
+            {
+                newDose.RecurrenceInterval = 1;
+            }
+            
+            if (recurrenceType != RecurrenceType.Weekly)
+            {
+                newDose.DaysOfWeek.Clear();
+            }
+            
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleDayOfWeek(DayOfWeek day, bool isChecked)
+    {
+        if (isChecked)
+        {
+            if (!newDose.DaysOfWeek.Contains(day))
+            {
+                newDose.DaysOfWeek.Add(day);
+            }
+        }
+        else
+        {
+            newDose.DaysOfWeek.Remove(day);
+        }
     }
 }

@@ -700,6 +700,10 @@ namespace AnimalShelterApp.Services
         public async Task<bool> CreateScheduledDoseAsync(string shelterId, ScheduledDose dose, string token)
         {
             var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/schedule?documentId={dose.Id}";
+            
+            // Convert DaysOfWeek list to strings for Firestore
+            var daysOfWeekStrings = dose.DaysOfWeek?.Select(d => d.ToString()).ToArray() ?? Array.Empty<string>();
+            
             var payload = new
             {
                 fields = new
@@ -708,7 +712,10 @@ namespace AnimalShelterApp.Services
                     medicationId = new { stringValue = dose.MedicationId },
                     dosage = new { stringValue = dose.Dosage },
                     timeOfDay = new { stringValue = dose.TimeOfDay },
-                    notes = new { stringValue = dose.Notes ?? "" }
+                    notes = new { stringValue = dose.Notes ?? "" },
+                    recurrenceType = new { stringValue = dose.RecurrenceType.ToString() },
+                    recurrenceInterval = new { integerValue = dose.RecurrenceInterval.ToString() },
+                    daysOfWeek = new { arrayValue = new { values = daysOfWeekStrings.Select(d => new { stringValue = d }).ToArray() } }
                 }
             };
 
@@ -773,6 +780,22 @@ namespace AnimalShelterApp.Services
             {
                 if (element.TryGetProperty("document", out var doc) && doc.TryGetProperty("fields", out var fields))
                 {
+                    // Parse DaysOfWeek array
+                    var daysOfWeek = new List<DayOfWeek>();
+                    if (fields.TryGetProperty("daysOfWeek", out var daysOfWeekProp) && 
+                        daysOfWeekProp.TryGetProperty("arrayValue", out var arrayValue) &&
+                        arrayValue.TryGetProperty("values", out var values))
+                    {
+                        foreach (var dayElement in values.EnumerateArray())
+                        {
+                            if (dayElement.TryGetProperty("stringValue", out var dayStr) && 
+                                Enum.TryParse<DayOfWeek>(dayStr.GetString(), out var dayOfWeek))
+                            {
+                                daysOfWeek.Add(dayOfWeek);
+                            }
+                        }
+                    }
+
                     var dose = new ScheduledDose
                     {
                         Id = doc.GetProperty("name").GetString()?.Split('/').Last() ?? "",
@@ -780,7 +803,14 @@ namespace AnimalShelterApp.Services
                         MedicationId = fields.TryGetProperty("medicationId", out var medIdProp) ? medIdProp.GetProperty("stringValue").GetString() ?? "" : "",
                         Dosage = fields.TryGetProperty("dosage", out var dosageProp) ? dosageProp.GetProperty("stringValue").GetString() ?? "" : "",
                         TimeOfDay = fields.TryGetProperty("timeOfDay", out var timeProp) ? timeProp.GetProperty("stringValue").GetString() ?? "" : "",
-                        Notes = fields.TryGetProperty("notes", out var notesProp) ? notesProp.GetProperty("stringValue").GetString() ?? "" : ""
+                        Notes = fields.TryGetProperty("notes", out var notesProp) ? notesProp.GetProperty("stringValue").GetString() ?? "" : "",
+                        RecurrenceType = fields.TryGetProperty("recurrenceType", out var recurrenceProp) && 
+                                       Enum.TryParse<RecurrenceType>(recurrenceProp.GetProperty("stringValue").GetString(), out var recurrenceType) 
+                                       ? recurrenceType : RecurrenceType.Daily,
+                        RecurrenceInterval = fields.TryGetProperty("recurrenceInterval", out var intervalProp) && 
+                                           int.TryParse(intervalProp.GetProperty("integerValue").GetString(), out var interval) 
+                                           ? interval : 1,
+                        DaysOfWeek = daysOfWeek
                     };
                     doses.Add(dose);
                 }
@@ -827,6 +857,22 @@ namespace AnimalShelterApp.Services
             {
                 if (element.TryGetProperty("document", out var doc) && doc.TryGetProperty("fields", out var fields))
                 {
+                    // Parse DaysOfWeek array
+                    var daysOfWeek = new List<DayOfWeek>();
+                    if (fields.TryGetProperty("daysOfWeek", out var daysOfWeekProp) && 
+                        daysOfWeekProp.TryGetProperty("arrayValue", out var arrayValue) &&
+                        arrayValue.TryGetProperty("values", out var values))
+                    {
+                        foreach (var dayElement in values.EnumerateArray())
+                        {
+                            if (dayElement.TryGetProperty("stringValue", out var dayStr) && 
+                                Enum.TryParse<DayOfWeek>(dayStr.GetString(), out var dayOfWeek))
+                            {
+                                daysOfWeek.Add(dayOfWeek);
+                            }
+                        }
+                    }
+
                     var dose = new ScheduledDose
                     {
                         Id = doc.GetProperty("name").GetString()?.Split('/').Last() ?? "",
@@ -834,7 +880,14 @@ namespace AnimalShelterApp.Services
                         MedicationId = fields.TryGetProperty("medicationId", out var medIdProp) ? medIdProp.GetProperty("stringValue").GetString() ?? "" : "",
                         Dosage = fields.TryGetProperty("dosage", out var dosageProp) ? dosageProp.GetProperty("stringValue").GetString() ?? "" : "",
                         TimeOfDay = fields.TryGetProperty("timeOfDay", out var timeProp) ? timeProp.GetProperty("stringValue").GetString() ?? "" : "",
-                        Notes = fields.TryGetProperty("notes", out var notesProp) ? notesProp.GetProperty("stringValue").GetString() ?? "" : ""
+                        Notes = fields.TryGetProperty("notes", out var notesProp) ? notesProp.GetProperty("stringValue").GetString() ?? "" : "",
+                        RecurrenceType = fields.TryGetProperty("recurrenceType", out var recurrenceProp) && 
+                                       Enum.TryParse<RecurrenceType>(recurrenceProp.GetProperty("stringValue").GetString(), out var recurrenceType) 
+                                       ? recurrenceType : RecurrenceType.Daily,
+                        RecurrenceInterval = fields.TryGetProperty("recurrenceInterval", out var intervalProp) && 
+                                           int.TryParse(intervalProp.GetProperty("integerValue").GetString(), out var interval) 
+                                           ? interval : 1,
+                        DaysOfWeek = daysOfWeek
                     };
                     doses.Add(dose);
                 }
