@@ -180,6 +180,7 @@ else
                             <th>Medication</th>
                             <th>Dosage</th>
                             <th>Time</th>
+                            <th>Schedule</th>
                             <th>Notes</th>
                         </tr>
                     </thead>
@@ -212,6 +213,23 @@ else
                                 </td>
                                 <td>@dose.Dosage</td>
                                 <td>@dose.TimeOfDay</td>
+                                <td>
+                                    <div>
+                                        <span class="badge bg-info">@GetRecurrenceDisplayText(dose)</span>
+                                        @if (dose.RecurrenceType == RecurrenceType.Weekly && dose.DaysOfWeek.Any())
+                                        {
+                                            <div class="mt-1">
+                                                <small class="text-muted">@GetDaysOfWeekText(dose.DaysOfWeek)</small>
+                                            </div>
+                                        }
+                                        @if (dose.RecurrenceType == RecurrenceType.EveryXDays && dose.RecurrenceInterval > 1)
+                                        {
+                                            <div class="mt-1">
+                                                <small class="text-muted">Every @dose.RecurrenceInterval days</small>
+                                            </div>
+                                        }
+                                    </div>
+                                </td>
                                 <td>@dose.Notes</td>
                             </tr>
                         }
@@ -708,5 +726,43 @@ else
         {
             newDose.DaysOfWeek.Remove(day);
         }
+    }
+
+    // Helper methods for displaying recurring patterns
+    private string GetRecurrenceDisplayText(ScheduledDose dose)
+    {
+        return dose.RecurrenceType switch
+        {
+            RecurrenceType.Daily => "Daily",
+            RecurrenceType.EveryXDays => dose.RecurrenceInterval == 2 ? "Every Other Day" : $"Every {dose.RecurrenceInterval} Days",
+            RecurrenceType.Weekly => "Weekly",
+            RecurrenceType.BiWeekly => "Bi-Weekly",
+            RecurrenceType.Monthly => "Monthly",
+            RecurrenceType.AsNeeded => "As Needed (PRN)",
+            _ => "Unknown"
+        };
+    }
+
+    private string GetDaysOfWeekText(List<DayOfWeek> daysOfWeek)
+    {
+        if (!daysOfWeek.Any()) return "";
+        
+        // Sort days starting with Sunday
+        var sortedDays = daysOfWeek.OrderBy(d => (int)d).ToList();
+        
+        // Abbreviate day names for compact display
+        var dayAbbreviations = sortedDays.Select(d => d switch
+        {
+            DayOfWeek.Sunday => "Sun",
+            DayOfWeek.Monday => "Mon",
+            DayOfWeek.Tuesday => "Tue",
+            DayOfWeek.Wednesday => "Wed",
+            DayOfWeek.Thursday => "Thu",
+            DayOfWeek.Friday => "Fri",
+            DayOfWeek.Saturday => "Sat",
+            _ => d.ToString()
+        });
+        
+        return string.Join(", ", dayAbbreviations);
     }
 }
