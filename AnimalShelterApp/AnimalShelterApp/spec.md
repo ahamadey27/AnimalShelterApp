@@ -138,15 +138,28 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] Add DaysOfWeek field (List<DayOfWeek>) for weekly patterns
 - [x] Update UI to show recurring pattern selection with intuitive options
 
-#### 2. Multiple Daily Doses - Fixed Times vs Interval Based
-- [ ] Add DosesPerDay field (int) to ScheduledDose.cs
-- [ ] Add TimeSlots field (List<string>) to replace single TimeOfDay
-- [ ] Create UI patterns for:
-  - [ ] **Fixed Times**: Specific times (8:00 AM, 2:00 PM, 8:00 PM)
-  - [ ] **Interval Based**: Every X hours (every 8 hours, every 6 hours)
-  - [ ] **Meal-Based**: With breakfast, lunch, dinner options
-- [ ] Add plus button (+) interface near time selection for adding multiple doses
-- [ ] Ensure dashboard handles multiple doses per day correctly
+#### 2. Enhanced Scheduling Options
+- [ ] **Multiple Daily Doses Support**
+  - [ ] Add DosesPerDay field (int) to ScheduledDose.cs
+  - [ ] Add TimeSlots field (List<string>) to replace single TimeOfDay
+  - [ ] Create UI patterns for:
+    - [ ] **Fixed Times**: Specific times (8:00 AM, 2:00 PM, 8:00 PM)
+    - [ ] **Interval Based**: Every X hours (every 8 hours, every 6 hours)
+    - [ ] **Meal-Based**: With breakfast, lunch, dinner options
+  - [ ] Add plus button (+) interface near time selection for adding multiple doses
+  - [ ] Ensure dashboard handles multiple doses per day correctly
+
+- [ ] **Food Relationship Options**
+  - [ ] Add FoodRelationship enum to ScheduledDose.cs:
+    - [ ] WithFood
+    - [ ] WithoutFood  
+    - [ ] BeforeMeal
+    - [ ] AfterMeal
+    - [ ] DoesNotMatter (default)
+  - [ ] Add FoodRelationship field to ScheduledDose.cs
+  - [ ] Create dropdown component with clear labels
+  - [ ] Display food relationship info in dashboard and reports
+  - [ ] Include in medication administration reminders
 
 #### 3. Start Date / End Date AND Indefinite Options
 - [ ] Add StartDate field (DateTime) to ScheduledDose.cs
@@ -157,7 +170,7 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [ ] Add UI toggle between "End Date" and "Indefinite" options
 - [ ] Update dashboard logic to respect start/end dates
 
-#### 4a. Enhanced Time Picker Widget
+#### 4. Enhanced Time Picker Widget
 - [ ] Create TimePickerComponent.razor with:
   - [ ] Hour dropdown (1-12 for 12-hour format)
   - [ ] Minutes dropdown in 15-minute increments (00, 15, 30, 45)
@@ -165,18 +178,6 @@ This roadmap breaks the project into six distinct phases, each with actionable s
   - [ ] Floating window/modal design
   - [ ] Convert to 24-hour format for storage
   - [ ] Display in user-preferred format
-
-#### 4b. Food Relationship Dropdown
-- [ ] Add FoodRelationship enum to ScheduledDose.cs:
-  - [ ] WithFood
-  - [ ] WithoutFood  
-  - [ ] BeforeMeal
-  - [ ] AfterMeal
-  - [ ] DoesNotMatter (default)
-- [ ] Add FoodRelationship field to ScheduledDose.cs
-- [ ] Create dropdown component with clear labels
-- [ ] Display food relationship info in dashboard and reports
-- [ ] Include in medication administration reminders
 
 ### Step 3: Medication & Scheduling
 - [x] Create a simple UI to manage a list of common medications for the shelter.
