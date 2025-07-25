@@ -80,7 +80,7 @@ else
 
                 <div class="mb-3">
                     <label for="name" class="form-label">Name</label>
-                    <InputText id="name" @bind-Value="animal.Name" class="form-control" placeholder="Enter animal name" />
+                    <InputText id="name" @bind-Value="animal.Name" class="form-control" placeholder="Enter animal name" @onkeypress="HandleKeyPress" />
                     <ValidationMessage For="@(() => animal.Name)" />
                 </div>
                 
@@ -109,7 +109,7 @@ else
                     </div>
                     <div class="col">
                         <label for="color" class="form-label">Color</label>
-                        <InputText id="color" @bind-Value="animal.Color" class="form-control" placeholder="Enter animal color" />
+                        <InputText id="color" @bind-Value="animal.Color" class="form-control" placeholder="Enter animal color" @onkeypress="HandleKeyPress" />
                         <ValidationMessage For="@(() => animal.Color)" />
                     </div>
                 </div>
@@ -182,6 +182,7 @@ else
                             <th>Time</th>
                             <th>Schedule</th>
                             <th>Notes</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -266,6 +267,16 @@ else
                                     </div>
                                 </td>
                                 <td>@dose.Notes</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" @onclick="@(() => EditDose(dose))">
+                                            <span class="oi oi-pencil"></span>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" @onclick="@(() => DeleteDose(dose))">
+                                            <span class="oi oi-trash"></span>
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -276,9 +287,9 @@ else
                 <p>No medications scheduled for this animal.</p>
             }
 
-            <!-- Add New Dose Form -->
+            <!-- Add/Edit Dose Form -->
             <div class="card mt-4">
-                <div class="card-header">Schedule New Medication</div>
+                <div class="card-header">@(isEditingDose ? "Edit Medication" : "Schedule New Medication")</div>
                 <div class="card-body">
                     <EditForm Model="newDose" OnValidSubmit="ScheduleDose">
                         <DataAnnotationsValidator />
@@ -334,7 +345,7 @@ else
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Dosage</label>
-                            <InputText @bind-Value="newDose.Dosage" class="form-control" />
+                            <InputText @bind-Value="newDose.Dosage" class="form-control" @onkeypress="HandleKeyPress" />
                             <ValidationMessage For="@(() => newDose.Dosage)" />
                         </div>
                         <!-- Enhanced Scheduling Options -->
@@ -343,7 +354,7 @@ else
                             
                             <div class="mb-3">
                                 <label class="form-label">Number of Doses Per Day</label>
-                                <InputNumber @bind-Value="newDose.DosesPerDay" class="form-control" min="1" max="6" @onchange="OnDosesPerDayChanged" />
+                                <InputNumber @bind-Value="newDose.DosesPerDay" class="form-control" min="1" max="6" @onchange="OnDosesPerDayChanged" @onkeypress="HandleKeyPress" />
                                 <div class="form-text">Enter 1-6 doses per day</div>
                             </div>
                             
@@ -358,7 +369,8 @@ else
                                             <span class="input-group-text">@(index + 1).</span>
                                             <input type="time" class="form-control" 
                                                    value="@newDose.TimeSlots[index]" 
-                                                   @onchange="@((ChangeEventArgs e) => UpdateTimeSlot(index, e.Value?.ToString() ?? ""))" />
+                                                   @onchange="@((ChangeEventArgs e) => UpdateTimeSlot(index, e.Value?.ToString() ?? ""))"
+                                                   @onkeypress="HandleKeyPress" />
                                             @if (newDose.TimeSlots.Count > 1)
                                             {
                                                 <button type="button" class="btn btn-outline-danger" @onclick="@(() => RemoveTimeSlot(index))">
@@ -453,9 +465,19 @@ else
                         
                         <div class="mb-3">
                             <label class="form-label">Notes</label>
-                            <InputTextArea @bind-Value="newDose.Notes" class="form-control" />
+                            <InputTextArea @bind-Value="newDose.Notes" class="form-control" @onkeypress="HandleKeyPress" />
                         </div>
-                        <button type="submit" class="btn btn-primary">Schedule Dose</button>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                @(isEditingDose ? "Update Medication" : "Schedule Dose")
+                            </button>
+                            @if (isEditingDose)
+                            {
+                                <button type="button" class="btn btn-secondary" @onclick="CancelEdit">
+                                    Cancel
+                                </button>
+                            }
+                        </div>
                     </EditForm>
                 </div>
             </div>
@@ -519,6 +541,8 @@ else
         TimeSlots = new List<string> { "08:00" },
         FoodRelationship = FoodRelationship.DoesNotMatter
     };
+    private ScheduledDose? editingDose = null;
+    private bool isEditingDose = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -747,12 +771,27 @@ else
     {
         if (animal == null || AuthService.CurrentUser == null || string.IsNullOrEmpty(AuthService.Token)) return;
 
-        newDose.Id = Guid.NewGuid().ToString("N").Substring(0, 12);
-        newDose.AnimalId = animal.Id;
+        bool success;
+        
+        if (isEditingDose && editingDose != null)
+        {
+            // Update existing dose
+            newDose.AnimalId = animal.Id;
+            success = await FirestoreService.UpdateScheduledDoseAsync(AuthService.CurrentUser.ShelterId, newDose, AuthService.Token);
+        }
+        else
+        {
+            // Create new dose
+            newDose.Id = Guid.NewGuid().ToString("N").Substring(0, 12);
+            newDose.AnimalId = animal.Id;
+            success = await FirestoreService.CreateScheduledDoseAsync(AuthService.CurrentUser.ShelterId, newDose, AuthService.Token);
+        }
 
-        var success = await FirestoreService.CreateScheduledDoseAsync(AuthService.CurrentUser.ShelterId, newDose, AuthService.Token);
         if (success)
         {
+            // Reset form and editing state
+            isEditingDose = false;
+            editingDose = null;
             newDose = new() 
             { 
                 DosesPerDay = 1, 
@@ -919,5 +958,70 @@ else
             FoodRelationship.AfterMeal => "Give 30 minutes after feeding to aid digestion",
             _ => "No specific food requirements"
         };
+    }
+
+    // Edit and Delete methods for scheduled doses
+    private void EditDose(ScheduledDose dose)
+    {
+        editingDose = dose;
+        isEditingDose = true;
+        
+        // Copy the dose data to the form
+        newDose.Id = dose.Id;
+        newDose.MedicationId = dose.MedicationId;
+        newDose.Dosage = dose.Dosage;
+        newDose.TimeOfDay = dose.TimeOfDay;
+        newDose.Notes = dose.Notes;
+        newDose.RecurrenceType = dose.RecurrenceType;
+        newDose.RecurrenceInterval = dose.RecurrenceInterval;
+        newDose.DaysOfWeek = new List<DayOfWeek>(dose.DaysOfWeek);
+        newDose.DosesPerDay = dose.DosesPerDay;
+        newDose.TimeSlots = new List<string>(dose.TimeSlots ?? new List<string> { dose.TimeOfDay ?? "08:00" });
+        newDose.FoodRelationship = dose.FoodRelationship;
+        
+        StateHasChanged();
+    }
+
+    private async Task DeleteDose(ScheduledDose dose)
+    {
+        if (animal == null || AuthService.CurrentUser == null || string.IsNullOrEmpty(AuthService.Token)) return;
+
+        // Simple confirmation (you could add a modal for better UX)
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete this medication schedule for {medications?.FirstOrDefault(m => m.Id == dose.MedicationId)?.Name ?? "Unknown"}?");
+        
+        if (confirmed)
+        {
+            var success = await FirestoreService.DeleteScheduledDoseAsync(AuthService.CurrentUser.ShelterId, dose.Id, AuthService.Token);
+            if (success)
+            {
+                await LoadScheduledDoses(); // Refresh list
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void CancelEdit()
+    {
+        isEditingDose = false;
+        editingDose = null;
+        
+        // Reset form to defaults
+        newDose = new() 
+        { 
+            DosesPerDay = 1, 
+            TimeSlots = new List<string> { "08:00" },
+            FoodRelationship = FoodRelationship.DoesNotMatter
+        };
+        
+        StateHasChanged();
+    }
+
+    // Prevent Enter key from submitting form when typing in input fields
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await JSRuntime.InvokeVoidAsync("eval", "event.preventDefault()");
+        }
     }
 }

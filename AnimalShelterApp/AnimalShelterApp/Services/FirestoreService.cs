@@ -743,6 +743,64 @@ namespace AnimalShelterApp.Services
             return response.IsSuccessStatusCode;
         }
 
+        public async Task<bool> UpdateScheduledDoseAsync(string shelterId, ScheduledDose dose, string token)
+        {
+            var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/schedule/{dose.Id}";
+
+            var payload = new
+            {
+                fields = new
+                {
+                    id = new { stringValue = dose.Id },
+                    animalId = new { stringValue = dose.AnimalId },
+                    medicationId = new { stringValue = dose.MedicationId },
+                    dosage = new { stringValue = dose.Dosage },
+                    timeOfDay = new { stringValue = dose.TimeOfDay ?? "" },
+                    notes = new { stringValue = dose.Notes ?? "" },
+                    recurrenceType = new { stringValue = dose.RecurrenceType.ToString() },
+                    recurrenceInterval = new { integerValue = dose.RecurrenceInterval.ToString() },
+                    daysOfWeek = new { arrayValue = new { values = dose.DaysOfWeek.Select(d => new { stringValue = d.ToString() }).ToArray() } },
+                    dosesPerDay = new { integerValue = dose.DosesPerDay.ToString() },
+                    timeSlots = new { arrayValue = new { values = dose.TimeSlots.Select(t => new { stringValue = t }).ToArray() } },
+                    foodRelationship = new { stringValue = dose.FoodRelationship.ToString() }
+                }
+            };
+
+            var request = new HttpRequestMessage(HttpMethod.Patch, url)
+            {
+                Content = JsonContent.Create(payload)
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await _httpClient.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Error updating scheduled dose: {errorContent}");
+            }
+
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> DeleteScheduledDoseAsync(string shelterId, string doseId, string token)
+        {
+            var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/schedule/{doseId}";
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await _httpClient.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Error deleting scheduled dose: {errorContent}");
+            }
+
+            return response.IsSuccessStatusCode;
+        }
+
         public async Task<List<ScheduledDose>> GetScheduledDosesForAnimalAsync(string shelterId, string animalId, string token)
         {
             var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}:runQuery";
