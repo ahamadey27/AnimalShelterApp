@@ -614,16 +614,15 @@ else
         {
             newDose.DurationInDays = value;
             
-            // Calculate end date based on start date and duration
-            if (value.HasValue && value > 0 && newDose.StartDate != default)
+            // Only auto-calculate end date when NOT in editing mode to avoid interference
+            if (!isEditingDose && value.HasValue && value > 0 && newDose.StartDate != default)
             {
                 newDose.EndDate = newDose.StartDate.AddDays(value.Value - 1);
                 StateHasChanged();
             }
-            else if (!value.HasValue)
+            else if (!isEditingDose && !value.HasValue)
             {
-                // Clear end date if duration is cleared (but only if it was calculated from duration)
-                // Don't clear if user manually set an end date
+                // Clear end date if duration is cleared (but only when creating new doses)
                 StateHasChanged();
             }
         }
@@ -637,8 +636,8 @@ else
         {
             newDose.EndDate = value;
             
-            // Calculate duration based on start date and end date
-            if (value.HasValue && newDose.StartDate != default)
+            // Only auto-calculate duration when NOT in editing mode to avoid interference
+            if (!isEditingDose && value.HasValue && newDose.StartDate != default)
             {
                 var duration = (value.Value.Date - newDose.StartDate.Date).Days + 1;
                 if (duration > 0)
@@ -647,9 +646,9 @@ else
                 }
                 StateHasChanged();
             }
-            else if (!value.HasValue)
+            else if (!isEditingDose && !value.HasValue)
             {
-                // Clear duration if end date is cleared
+                // Clear duration if end date is cleared (but only when creating new doses)
                 newDose.DurationInDays = null;
                 StateHasChanged();
             }
@@ -670,8 +669,9 @@ else
                 lastUsedStartDate = value; // Remember user's preference for new doses
             }
             
-            // Recalculate end date if duration is set
-            if (newDose.DurationInDays.HasValue && newDose.DurationInDays > 0)
+            // Only recalculate end date if duration is set AND we're not in editing mode
+            // (to avoid interfering with loaded data)
+            if (!isEditingDose && newDose.DurationInDays.HasValue && newDose.DurationInDays > 0)
             {
                 newDose.EndDate = value.AddDays(newDose.DurationInDays.Value - 1);
             }
@@ -1118,24 +1118,28 @@ else
         editingDose = dose;
         isEditingDose = true;
         
-        // Copy the dose data to the form
-        newDose.Id = dose.Id;
-        newDose.MedicationId = dose.MedicationId;
-        newDose.Dosage = dose.Dosage;
-        newDose.TimeOfDay = dose.TimeOfDay;
-        newDose.Notes = dose.Notes;
-        newDose.RecurrenceType = dose.RecurrenceType;
-        newDose.RecurrenceInterval = dose.RecurrenceInterval;
-        newDose.DaysOfWeek = new List<DayOfWeek>(dose.DaysOfWeek);
-        newDose.DosesPerDay = dose.DosesPerDay;
-        newDose.TimeSlots = new List<string>(dose.TimeSlots ?? new List<string> { dose.TimeOfDay ?? "08:00" });
-        newDose.FoodRelationship = dose.FoodRelationship;
-        
-        // Copy date and duration fields - IMPORTANT: Set IsIndefinite FIRST before setting dates
-        newDose.IsIndefinite = dose.IsIndefinite;
-        newDose.StartDate = dose.StartDate;
-        newDose.EndDate = dose.EndDate;
-        newDose.DurationInDays = dose.DurationInDays;
+        // Create a completely new ScheduledDose object with the existing dose's values
+        // This ensures clean binding without interference from property setters
+        newDose = new ScheduledDose
+        {
+            Id = dose.Id,
+            AnimalId = dose.AnimalId,
+            MedicationId = dose.MedicationId,
+            Dosage = dose.Dosage,
+            TimeOfDay = dose.TimeOfDay,
+            Notes = dose.Notes,
+            RecurrenceType = dose.RecurrenceType,
+            RecurrenceInterval = dose.RecurrenceInterval,
+            DaysOfWeek = new List<DayOfWeek>(dose.DaysOfWeek),
+            DosesPerDay = dose.DosesPerDay,
+            TimeSlots = new List<string>(dose.TimeSlots ?? new List<string> { dose.TimeOfDay ?? "08:00" }),
+            FoodRelationship = dose.FoodRelationship,
+            // Date fields - copy exactly as they are
+            IsIndefinite = dose.IsIndefinite,
+            StartDate = dose.StartDate,
+            EndDate = dose.EndDate,
+            DurationInDays = dose.DurationInDays
+        };
         
         // Force UI update to reflect the loaded state
         StateHasChanged();
