@@ -505,6 +505,14 @@ else
                                         (from @newDose.StartDate.ToString("MMM dd, yyyy") to @newDose.EndDate.Value.ToString("MMM dd, yyyy"))
                                     </div>
                                 }
+                                
+                                @* Debug info during editing *@
+                                @if (isEditingDose)
+                                {
+                                    <div class="alert alert-warning">
+                                        <small><strong>Debug:</strong> Editing mode - IsIndefinite: @newDose.IsIndefinite, EndDate: @(newDose.EndDate?.ToString("yyyy-MM-dd") ?? "null"), Duration: @(newDose.DurationInDays?.ToString() ?? "null")</small>
+                                    </div>
+                                }
                             }
                             else
                             {
@@ -655,7 +663,12 @@ else
         set
         {
             newDose.StartDate = value;
-            lastUsedStartDate = value; // Remember user's preference
+            
+            // Only remember user's preference when creating new doses, not when editing existing ones
+            if (!isEditingDose)
+            {
+                lastUsedStartDate = value; // Remember user's preference for new doses
+            }
             
             // Recalculate end date if duration is set
             if (newDose.DurationInDays.HasValue && newDose.DurationInDays > 0)
@@ -1124,9 +1137,6 @@ else
         newDose.EndDate = dose.EndDate;
         newDose.DurationInDays = dose.DurationInDays;
         
-        // Update the remembered start date to the edited dose's start date
-        lastUsedStartDate = dose.StartDate;
-        
         // Force UI update to reflect the loaded state
         StateHasChanged();
     }
@@ -1188,6 +1198,19 @@ else
                 // Clear end date and duration when set to indefinite
                 newDose.EndDate = null;
                 newDose.DurationInDays = null;
+            }
+            else
+            {
+                // When switching from indefinite to finite, restore a reasonable default if no end date exists
+                if (!newDose.EndDate.HasValue && !newDose.DurationInDays.HasValue)
+                {
+                    // Default to 7 days if nothing is set
+                    newDose.DurationInDays = 7;
+                    if (newDose.StartDate != default)
+                    {
+                        newDose.EndDate = newDose.StartDate.AddDays(6); // 7 days total
+                    }
+                }
             }
             
             StateHasChanged();
