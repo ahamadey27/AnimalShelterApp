@@ -156,6 +156,17 @@ else
 
             foreach (var dose in allScheduledDoses)
             {
+                // Check if this dose should be active today based on start/end dates
+                var today = DateTime.Today;
+                
+                // Skip if start date is in the future
+                if (dose.StartDate.Date > today)
+                    continue;
+                
+                // Skip if end date is in the past (only for non-indefinite doses)
+                if (!dose.IsIndefinite && dose.EndDate.HasValue && dose.EndDate.Value.Date < today)
+                    continue;
+
                 var viewModel = new DashboardDoseViewModel
                 {
                     ScheduledDoseId = dose.Id,

@@ -469,7 +469,7 @@ else
                             
                             <div class="mb-3">
                                 <label class="form-label">Start Date</label>
-                                <InputDate @bind-Value="newDose.StartDate" class="form-control" />
+                                <InputDate @bind-Value="StartDateProperty" class="form-control" />
                                 <div class="form-text">When should this medication schedule begin?</div>
                             </div>
                             
@@ -596,6 +596,7 @@ else
     };
     private ScheduledDose? editingDose = null;
     private bool isEditingDose = false;
+    private DateTime lastUsedStartDate = DateTime.Today; // Remember user's preferred start date
 
     // Property to handle Duration changes with automatic End Date calculation
     private int? DurationInDaysProperty
@@ -644,6 +645,25 @@ else
                 newDose.DurationInDays = null;
                 StateHasChanged();
             }
+        }
+    }
+
+    // Property to handle Start Date changes and remember user preference
+    private DateTime StartDateProperty
+    {
+        get => newDose.StartDate;
+        set
+        {
+            newDose.StartDate = value;
+            lastUsedStartDate = value; // Remember user's preference
+            
+            // Recalculate end date if duration is set
+            if (newDose.DurationInDays.HasValue && newDose.DurationInDays > 0)
+            {
+                newDose.EndDate = value.AddDays(newDose.DurationInDays.Value - 1);
+            }
+            
+            StateHasChanged();
         }
     }
 
@@ -900,7 +920,7 @@ else
                 DosesPerDay = 1, 
                 TimeSlots = new List<string> { "08:00" },
                 FoodRelationship = FoodRelationship.DoesNotMatter,
-                StartDate = DateTime.Today,
+                StartDate = lastUsedStartDate, // Use user's preferred date
                 IsIndefinite = false
             }; // Reset form
             await LoadScheduledDoses(); // Refresh list
@@ -1098,12 +1118,16 @@ else
         newDose.TimeSlots = new List<string>(dose.TimeSlots ?? new List<string> { dose.TimeOfDay ?? "08:00" });
         newDose.FoodRelationship = dose.FoodRelationship;
         
-        // Copy date and duration fields
+        // Copy date and duration fields - IMPORTANT: Set IsIndefinite FIRST before setting dates
+        newDose.IsIndefinite = dose.IsIndefinite;
         newDose.StartDate = dose.StartDate;
         newDose.EndDate = dose.EndDate;
-        newDose.IsIndefinite = dose.IsIndefinite;
         newDose.DurationInDays = dose.DurationInDays;
         
+        // Update the remembered start date to the edited dose's start date
+        lastUsedStartDate = dose.StartDate;
+        
+        // Force UI update to reflect the loaded state
         StateHasChanged();
     }
 
@@ -1136,7 +1160,7 @@ else
             DosesPerDay = 1, 
             TimeSlots = new List<string> { "08:00" },
             FoodRelationship = FoodRelationship.DoesNotMatter,
-            StartDate = DateTime.Today,
+            StartDate = lastUsedStartDate, // Use user's preferred date
             IsIndefinite = false
         };
         
