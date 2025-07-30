@@ -162,13 +162,13 @@ This roadmap breaks the project into six distinct phases, each with actionable s
   - [x] Include in medication administration reminders
 
 #### 3. Start Date / End Date AND Indefinite Options
-- [ ] Add StartDate field (DateTime) to ScheduledDose.cs
-- [ ] Add EndDate field (DateTime?) to ScheduledDose.cs - nullable for indefinite
-- [ ] Add IsIndefinite field (bool) to ScheduledDose.cs
-- [ ] Add Duration field (int?) for "10 days", "2 weeks" options
-- [ ] Create floating calendar date picker component
-- [ ] Add UI toggle between "End Date" and "Indefinite" options
-- [ ] Update dashboard logic to respect start/end dates
+- [x] Add StartDate field (DateTime) to ScheduledDose.cs
+- [x] Add EndDate field (DateTime?) to ScheduledDose.cs - nullable for indefinite
+- [x] Add IsIndefinite field (bool) to ScheduledDose.cs
+- [x] Add Duration field (int?) for "10 days", "2 weeks" options
+- [x] Create floating calendar date picker component
+- [x] Add UI toggle between "End Date" and "Indefinite" options
+- [x] Update dashboard logic to respect start/end dates
 
 ### Step 3: Medication & Scheduling
 - [x] Create a simple UI to manage a list of common medications for the shelter.

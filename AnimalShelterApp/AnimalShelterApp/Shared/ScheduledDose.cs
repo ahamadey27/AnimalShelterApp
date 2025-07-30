@@ -55,6 +55,21 @@ namespace AnimalShelterApp.Shared
         // How this medication should be given in relation to food
         public FoodRelationship FoodRelationship { get; set; } = FoodRelationship.DoesNotMatter;
 
+        // === START/END DATE AND DURATION ===
+        
+        // When this medication schedule should start
+        public DateTime StartDate { get; set; } = DateTime.Today;
+        
+        // When this medication schedule should end (null for indefinite)
+        public DateTime? EndDate { get; set; }
+        
+        // Whether this medication continues indefinitely
+        public bool IsIndefinite { get; set; } = true;
+        
+        // Duration in days for preset options (e.g., 10 for "10 days", 14 for "2 weeks")
+        // This is a helper field that can be used to calculate EndDate
+        public int? DurationInDays { get; set; }
+
     }
 
     // Enum for different types of recurring medication patterns

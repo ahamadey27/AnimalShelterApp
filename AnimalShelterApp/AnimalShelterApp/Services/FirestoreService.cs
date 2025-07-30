@@ -707,24 +707,45 @@ namespace AnimalShelterApp.Services
             // Convert TimeSlots list to array for Firestore
             var timeSlotsArray = dose.TimeSlots?.ToArray() ?? Array.Empty<string>();
             
-            var payload = new
+            // Build the fields object dynamically to handle nullable values properly
+            var fields = new Dictionary<string, object>
             {
-                fields = new
-                {
-                    animalId = new { stringValue = dose.AnimalId },
-                    medicationId = new { stringValue = dose.MedicationId },
-                    dosage = new { stringValue = dose.Dosage },
-                    timeOfDay = new { stringValue = dose.TimeOfDay },
-                    notes = new { stringValue = dose.Notes ?? "" },
-                    recurrenceType = new { stringValue = dose.RecurrenceType.ToString() },
-                    recurrenceInterval = new { integerValue = dose.RecurrenceInterval.ToString() },
-                    daysOfWeek = new { arrayValue = new { values = daysOfWeekStrings.Select(d => new { stringValue = d }).ToArray() } },
-                    // New fields for Enhanced Scheduling Options
-                    dosesPerDay = new { integerValue = dose.DosesPerDay.ToString() },
-                    timeSlots = new { arrayValue = new { values = timeSlotsArray.Select(t => new { stringValue = t }).ToArray() } },
-                    foodRelationship = new { stringValue = dose.FoodRelationship.ToString() }
-                }
+                { "animalId", new { stringValue = dose.AnimalId } },
+                { "medicationId", new { stringValue = dose.MedicationId } },
+                { "dosage", new { stringValue = dose.Dosage } },
+                { "timeOfDay", new { stringValue = dose.TimeOfDay } },
+                { "notes", new { stringValue = dose.Notes ?? "" } },
+                { "recurrenceType", new { stringValue = dose.RecurrenceType.ToString() } },
+                { "recurrenceInterval", new { integerValue = dose.RecurrenceInterval.ToString() } },
+                { "daysOfWeek", new { arrayValue = new { values = daysOfWeekStrings.Select(d => new { stringValue = d }).ToArray() } } },
+                { "dosesPerDay", new { integerValue = dose.DosesPerDay.ToString() } },
+                { "timeSlots", new { arrayValue = new { values = timeSlotsArray.Select(t => new { stringValue = t }).ToArray() } } },
+                { "foodRelationship", new { stringValue = dose.FoodRelationship.ToString() } },
+                { "startDate", new { timestampValue = dose.StartDate.ToUniversalTime().ToString("o") } },
+                { "isIndefinite", new { booleanValue = dose.IsIndefinite } }
             };
+
+            // Add endDate conditionally
+            if (dose.EndDate.HasValue)
+            {
+                fields["endDate"] = new { timestampValue = dose.EndDate.Value.ToUniversalTime().ToString("o") };
+            }
+            else
+            {
+                fields["endDate"] = new { nullValue = (object?)null };
+            }
+
+            // Add durationInDays conditionally
+            if (dose.DurationInDays.HasValue)
+            {
+                fields["durationInDays"] = new { integerValue = dose.DurationInDays.Value.ToString() };
+            }
+            else
+            {
+                fields["durationInDays"] = new { nullValue = (object?)null };
+            }
+
+            var payload = new { fields = fields };
 
             var request = new HttpRequestMessage(HttpMethod.Post, url)
             {
@@ -747,24 +768,46 @@ namespace AnimalShelterApp.Services
         {
             var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters/{shelterId}/schedule/{dose.Id}";
 
-            var payload = new
+            // Build the fields object dynamically to handle nullable values properly
+            var fields = new Dictionary<string, object>
             {
-                fields = new
-                {
-                    id = new { stringValue = dose.Id },
-                    animalId = new { stringValue = dose.AnimalId },
-                    medicationId = new { stringValue = dose.MedicationId },
-                    dosage = new { stringValue = dose.Dosage },
-                    timeOfDay = new { stringValue = dose.TimeOfDay ?? "" },
-                    notes = new { stringValue = dose.Notes ?? "" },
-                    recurrenceType = new { stringValue = dose.RecurrenceType.ToString() },
-                    recurrenceInterval = new { integerValue = dose.RecurrenceInterval.ToString() },
-                    daysOfWeek = new { arrayValue = new { values = dose.DaysOfWeek.Select(d => new { stringValue = d.ToString() }).ToArray() } },
-                    dosesPerDay = new { integerValue = dose.DosesPerDay.ToString() },
-                    timeSlots = new { arrayValue = new { values = dose.TimeSlots.Select(t => new { stringValue = t }).ToArray() } },
-                    foodRelationship = new { stringValue = dose.FoodRelationship.ToString() }
-                }
+                { "id", new { stringValue = dose.Id } },
+                { "animalId", new { stringValue = dose.AnimalId } },
+                { "medicationId", new { stringValue = dose.MedicationId } },
+                { "dosage", new { stringValue = dose.Dosage } },
+                { "timeOfDay", new { stringValue = dose.TimeOfDay ?? "" } },
+                { "notes", new { stringValue = dose.Notes ?? "" } },
+                { "recurrenceType", new { stringValue = dose.RecurrenceType.ToString() } },
+                { "recurrenceInterval", new { integerValue = dose.RecurrenceInterval.ToString() } },
+                { "daysOfWeek", new { arrayValue = new { values = dose.DaysOfWeek.Select(d => new { stringValue = d.ToString() }).ToArray() } } },
+                { "dosesPerDay", new { integerValue = dose.DosesPerDay.ToString() } },
+                { "timeSlots", new { arrayValue = new { values = dose.TimeSlots.Select(t => new { stringValue = t }).ToArray() } } },
+                { "foodRelationship", new { stringValue = dose.FoodRelationship.ToString() } },
+                { "startDate", new { timestampValue = dose.StartDate.ToUniversalTime().ToString("o") } },
+                { "isIndefinite", new { booleanValue = dose.IsIndefinite } }
             };
+
+            // Add endDate conditionally
+            if (dose.EndDate.HasValue)
+            {
+                fields["endDate"] = new { timestampValue = dose.EndDate.Value.ToUniversalTime().ToString("o") };
+            }
+            else
+            {
+                fields["endDate"] = new { nullValue = (object?)null };
+            }
+
+            // Add durationInDays conditionally
+            if (dose.DurationInDays.HasValue)
+            {
+                fields["durationInDays"] = new { integerValue = dose.DurationInDays.Value.ToString() };
+            }
+            else
+            {
+                fields["durationInDays"] = new { nullValue = (object?)null };
+            }
+
+            var payload = new { fields = fields };
 
             var request = new HttpRequestMessage(HttpMethod.Patch, url)
             {
@@ -1185,6 +1228,82 @@ namespace AnimalShelterApp.Services
                 Console.WriteLine($"Error deleting dose log: {ex.Message}");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Helper method to parse a ScheduledDose from Firestore document fields
+        /// </summary>
+        private ScheduledDose ParseScheduledDoseFromFields(JsonElement doc, JsonElement fields)
+        {
+            // Parse DaysOfWeek array
+            var daysOfWeek = new List<DayOfWeek>();
+            if (fields.TryGetProperty("daysOfWeek", out var daysOfWeekProp) && 
+                daysOfWeekProp.TryGetProperty("arrayValue", out var arrayValue) &&
+                arrayValue.TryGetProperty("values", out var values))
+            {
+                foreach (var dayElement in values.EnumerateArray())
+                {
+                    if (dayElement.TryGetProperty("stringValue", out var dayStr) && 
+                        Enum.TryParse<DayOfWeek>(dayStr.GetString(), out var dayOfWeek))
+                    {
+                        daysOfWeek.Add(dayOfWeek);
+                    }
+                }
+            }
+
+            // Parse TimeSlots array
+            var timeSlots = new List<string>();
+            if (fields.TryGetProperty("timeSlots", out var timeSlotsProp) && 
+                timeSlotsProp.TryGetProperty("arrayValue", out var timeSlotsArray) &&
+                timeSlotsArray.TryGetProperty("values", out var timeValues))
+            {
+                foreach (var timeElement in timeValues.EnumerateArray())
+                {
+                    if (timeElement.TryGetProperty("stringValue", out var timeStr))
+                    {
+                        timeSlots.Add(timeStr.GetString() ?? "");
+                    }
+                }
+            }
+
+            return new ScheduledDose
+            {
+                Id = doc.GetProperty("name").GetString()?.Split('/').Last() ?? "",
+                AnimalId = fields.TryGetProperty("animalId", out var animalIdProp) ? animalIdProp.GetProperty("stringValue").GetString() ?? "" : "",
+                MedicationId = fields.TryGetProperty("medicationId", out var medIdProp) ? medIdProp.GetProperty("stringValue").GetString() ?? "" : "",
+                Dosage = fields.TryGetProperty("dosage", out var dosageProp) ? dosageProp.GetProperty("stringValue").GetString() ?? "" : "",
+                TimeOfDay = fields.TryGetProperty("timeOfDay", out var timeProp) ? timeProp.GetProperty("stringValue").GetString() ?? "" : "",
+                Notes = fields.TryGetProperty("notes", out var notesProp) ? notesProp.GetProperty("stringValue").GetString() ?? "" : "",
+                RecurrenceType = fields.TryGetProperty("recurrenceType", out var recurrenceProp) && 
+                               Enum.TryParse<RecurrenceType>(recurrenceProp.GetProperty("stringValue").GetString(), out var recurrenceType) 
+                               ? recurrenceType : RecurrenceType.Daily,
+                RecurrenceInterval = fields.TryGetProperty("recurrenceInterval", out var intervalProp) && 
+                                   int.TryParse(intervalProp.GetProperty("integerValue").GetString(), out var interval) 
+                                   ? interval : 1,
+                DaysOfWeek = daysOfWeek,
+                DosesPerDay = fields.TryGetProperty("dosesPerDay", out var dosesPerDayProp) && 
+                            int.TryParse(dosesPerDayProp.GetProperty("integerValue").GetString(), out var dosesPerDay) 
+                            ? dosesPerDay : 1,
+                TimeSlots = timeSlots,
+                FoodRelationship = fields.TryGetProperty("foodRelationship", out var foodProp) && 
+                                 Enum.TryParse<FoodRelationship>(foodProp.GetProperty("stringValue").GetString(), out var foodRelationship) 
+                                 ? foodRelationship : FoodRelationship.DoesNotMatter,
+                // New Start/End Date fields
+                StartDate = fields.TryGetProperty("startDate", out var startDateProp) && 
+                          DateTime.TryParse(startDateProp.GetProperty("timestampValue").GetString(), out var startDate) 
+                          ? startDate : DateTime.Today,
+                EndDate = fields.TryGetProperty("endDate", out var endDateProp) && 
+                        endDateProp.TryGetProperty("timestampValue", out var endTimestamp) &&
+                        DateTime.TryParse(endTimestamp.GetString(), out var endDate) 
+                        ? endDate : null,
+                IsIndefinite = fields.TryGetProperty("isIndefinite", out var indefiniteProp) && 
+                             indefiniteProp.TryGetProperty("booleanValue", out var indefiniteVal) 
+                             ? indefiniteVal.GetBoolean() : true,
+                DurationInDays = fields.TryGetProperty("durationInDays", out var durationProp) && 
+                               durationProp.TryGetProperty("integerValue", out var durationVal) &&
+                               int.TryParse(durationVal.GetString(), out var duration) 
+                               ? duration : null
+            };
         }
     }
 }
