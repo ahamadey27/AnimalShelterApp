@@ -469,7 +469,17 @@ else
                             
                             <div class="mb-3">
                                 <label class="form-label">Start Date</label>
-                                <InputDate @bind-Value="newDose.StartDate" class="form-control" />
+                                @if (isEditingDose)
+                                {
+                                    <!-- Use plain HTML input to avoid Blazor InputDate binding issues -->
+                                    <input type="date" class="form-control" 
+                                           value="@newDose.StartDate.ToString("yyyy-MM-dd")"
+                                           @onchange="@((ChangeEventArgs e) => OnStartDateChanged(e))" />
+                                }
+                                else
+                                {
+                                    <InputDate @bind-Value="StartDateProperty" class="form-control" />
+                                }
                                 <div class="form-text">When should this medication schedule begin?</div>
                                 @* Debug info *@
                                 <div class="text-muted small">DEBUG: Current value = @newDose.StartDate.ToString("yyyy-MM-dd"), isEditingDose = @isEditingDose</div>
@@ -1243,6 +1253,24 @@ else
     }
 
     // Date and duration handler methods
+    private void OnStartDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var selectedDate))
+        {
+            Console.WriteLine($"[DEBUG] OnStartDateChanged called with: {selectedDate:yyyy-MM-dd}");
+            Console.WriteLine($"[DEBUG] isEditingDose: {isEditingDose}");
+            newDose.StartDate = selectedDate;
+            
+            // Only remember user preference when creating new doses
+            if (!isEditingDose)
+            {
+                lastUsedStartDate = selectedDate;
+            }
+            
+            StateHasChanged();
+        }
+    }
+
     private void OnIndefiniteChanged(ChangeEventArgs e)
     {
         if (bool.TryParse(e.Value?.ToString(), out var isIndefinite))
