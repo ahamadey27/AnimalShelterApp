@@ -487,12 +487,12 @@ else
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">End Date</label>
-                                        <InputDate @bind-Value="newDose.EndDate" class="form-control" />
+                                        <InputDate @bind-Value="EndDateProperty" class="form-control" />
                                         <div class="form-text">When should this medication schedule end?</div>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Duration (Days)</label>
-                                        <InputNumber @bind-Value="newDose.DurationInDays" class="form-control" min="1" @onchange="OnDurationChanged" @onkeypress="HandleKeyPress" />
+                                        <InputNumber @bind-Value="DurationInDaysProperty" class="form-control" min="1" @onkeypress="HandleKeyPress" />
                                         <div class="form-text">Alternative: specify number of days</div>
                                     </div>
                                 </div>
@@ -596,6 +596,56 @@ else
     };
     private ScheduledDose? editingDose = null;
     private bool isEditingDose = false;
+
+    // Property to handle Duration changes with automatic End Date calculation
+    private int? DurationInDaysProperty
+    {
+        get => newDose.DurationInDays;
+        set
+        {
+            newDose.DurationInDays = value;
+            
+            // Calculate end date based on start date and duration
+            if (value.HasValue && value > 0 && newDose.StartDate != default)
+            {
+                newDose.EndDate = newDose.StartDate.AddDays(value.Value - 1);
+                StateHasChanged();
+            }
+            else if (!value.HasValue)
+            {
+                // Clear end date if duration is cleared (but only if it was calculated from duration)
+                // Don't clear if user manually set an end date
+                StateHasChanged();
+            }
+        }
+    }
+
+    // Property to handle End Date changes with automatic Duration calculation
+    private DateTime? EndDateProperty
+    {
+        get => newDose.EndDate;
+        set
+        {
+            newDose.EndDate = value;
+            
+            // Calculate duration based on start date and end date
+            if (value.HasValue && newDose.StartDate != default)
+            {
+                var duration = (value.Value.Date - newDose.StartDate.Date).Days + 1;
+                if (duration > 0)
+                {
+                    newDose.DurationInDays = duration;
+                }
+                StateHasChanged();
+            }
+            else if (!value.HasValue)
+            {
+                // Clear duration if end date is cleared
+                newDose.DurationInDays = null;
+                StateHasChanged();
+            }
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -1117,27 +1167,6 @@ else
             }
             
             StateHasChanged();
-        }
-    }
-
-    private void OnDurationChanged(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out var duration) && duration > 0)
-        {
-            newDose.DurationInDays = duration;
-            
-            // Calculate end date based on start date and duration
-            if (newDose.StartDate != default)
-            {
-                newDose.EndDate = newDose.StartDate.AddDays(duration - 1);
-            }
-            
-            StateHasChanged();
-        }
-        else if (string.IsNullOrEmpty(e.Value?.ToString()))
-        {
-            // Clear duration if input is empty
-            newDose.DurationInDays = null;
         }
     }
 }
