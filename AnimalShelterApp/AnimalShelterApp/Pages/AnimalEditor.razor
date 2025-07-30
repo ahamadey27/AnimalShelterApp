@@ -463,6 +463,57 @@ else
                             }
                         </div>
                         
+                        <!-- Duration & Scheduling Section -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">Duration & Scheduling</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Start Date</label>
+                                <InputDate @bind-Value="newDose.StartDate" class="form-control" />
+                                <div class="form-text">When should this medication schedule begin?</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <InputCheckbox @bind-Value="newDose.IsIndefinite" class="form-check-input" id="indefinite-check" @onchange="OnIndefiniteChanged" />
+                                    <label class="form-check-label" for="indefinite-check">
+                                        Continue indefinitely (no end date)
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            @if (!newDose.IsIndefinite)
+                            {
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">End Date</label>
+                                        <InputDate @bind-Value="newDose.EndDate" class="form-control" />
+                                        <div class="form-text">When should this medication schedule end?</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Duration (Days)</label>
+                                        <InputNumber @bind-Value="newDose.DurationInDays" class="form-control" min="1" @onchange="OnDurationChanged" @onkeypress="HandleKeyPress" />
+                                        <div class="form-text">Alternative: specify number of days</div>
+                                    </div>
+                                </div>
+                                
+                                @if (newDose.EndDate.HasValue && newDose.StartDate != default)
+                                {
+                                    var calculatedDays = (newDose.EndDate.Value.Date - newDose.StartDate.Date).Days + 1;
+                                    <div class="alert alert-info">
+                                        <i class="oi oi-info"></i> This schedule will run for @calculatedDays day@(calculatedDays != 1 ? "s" : "") 
+                                        (from @newDose.StartDate.ToString("MMM dd, yyyy") to @newDose.EndDate.Value.ToString("MMM dd, yyyy"))
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="alert alert-warning">
+                                    <i class="oi oi-warning"></i> This medication will continue indefinitely until manually stopped.
+                                </div>
+                            }
+                        </div>
+                        
                         <div class="mb-3">
                             <label class="form-label">Notes</label>
                             <InputTextArea @bind-Value="newDose.Notes" class="form-control" @onkeypress="HandleKeyPress" />
@@ -539,7 +590,9 @@ else
     { 
         DosesPerDay = 1, 
         TimeSlots = new List<string> { "08:00" },
-        FoodRelationship = FoodRelationship.DoesNotMatter
+        FoodRelationship = FoodRelationship.DoesNotMatter,
+        StartDate = DateTime.Today,
+        IsIndefinite = false
     };
     private ScheduledDose? editingDose = null;
     private bool isEditingDose = false;
@@ -796,7 +849,9 @@ else
             { 
                 DosesPerDay = 1, 
                 TimeSlots = new List<string> { "08:00" },
-                FoodRelationship = FoodRelationship.DoesNotMatter
+                FoodRelationship = FoodRelationship.DoesNotMatter,
+                StartDate = DateTime.Today,
+                IsIndefinite = false
             }; // Reset form
             await LoadScheduledDoses(); // Refresh list
             StateHasChanged();
@@ -993,6 +1048,12 @@ else
         newDose.TimeSlots = new List<string>(dose.TimeSlots ?? new List<string> { dose.TimeOfDay ?? "08:00" });
         newDose.FoodRelationship = dose.FoodRelationship;
         
+        // Copy date and duration fields
+        newDose.StartDate = dose.StartDate;
+        newDose.EndDate = dose.EndDate;
+        newDose.IsIndefinite = dose.IsIndefinite;
+        newDose.DurationInDays = dose.DurationInDays;
+        
         StateHasChanged();
     }
 
@@ -1024,7 +1085,9 @@ else
         { 
             DosesPerDay = 1, 
             TimeSlots = new List<string> { "08:00" },
-            FoodRelationship = FoodRelationship.DoesNotMatter
+            FoodRelationship = FoodRelationship.DoesNotMatter,
+            StartDate = DateTime.Today,
+            IsIndefinite = false
         };
         
         StateHasChanged();
@@ -1036,6 +1099,45 @@ else
         if (e.Key == "Enter")
         {
             await JSRuntime.InvokeVoidAsync("eval", "event.preventDefault()");
+        }
+    }
+
+    // Date and duration handler methods
+    private void OnIndefiniteChanged(ChangeEventArgs e)
+    {
+        if (bool.TryParse(e.Value?.ToString(), out var isIndefinite))
+        {
+            newDose.IsIndefinite = isIndefinite;
+            
+            if (isIndefinite)
+            {
+                // Clear end date and duration when set to indefinite
+                newDose.EndDate = null;
+                newDose.DurationInDays = null;
+            }
+            
+            StateHasChanged();
+        }
+    }
+
+    private void OnDurationChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var duration) && duration > 0)
+        {
+            newDose.DurationInDays = duration;
+            
+            // Calculate end date based on start date and duration
+            if (newDose.StartDate != default)
+            {
+                newDose.EndDate = newDose.StartDate.AddDays(duration - 1);
+            }
+            
+            StateHasChanged();
+        }
+        else if (string.IsNullOrEmpty(e.Value?.ToString()))
+        {
+            // Clear duration if input is empty
+            newDose.DurationInDays = null;
         }
     }
 }

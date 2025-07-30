@@ -100,6 +100,7 @@ else
                     <th>Dosage</th>
                     <th>Time</th>
                     <th>Schedule</th>
+                    <th>Duration</th>
                     <th>Notes</th>
                 </tr>
             </thead>
@@ -145,6 +146,33 @@ else
                                 {
                                     <div class="mt-1">
                                         <small class="text-muted">Every @dose.RecurrenceInterval days</small>
+                                    </div>
+                                }
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                @if (dose.IsIndefinite)
+                                {
+                                    <span class="badge bg-secondary">Indefinite</span>
+                                }
+                                else if (dose.EndDate.HasValue)
+                                {
+                                    <div>
+                                        <small class="text-muted">Until:</small><br>
+                                        <strong>@dose.EndDate.Value.ToString("MMM dd, yyyy")</strong>
+                                    </div>
+                                    @if (dose.StartDate != default)
+                                    {
+                                        var totalDays = (dose.EndDate.Value.Date - dose.StartDate.Date).Days + 1;
+                                        <small class="text-muted">(@totalDays days)</small>
+                                    }
+                                }
+                                else if (dose.StartDate != default)
+                                {
+                                    <div>
+                                        <small class="text-muted">Started:</small><br>
+                                        <strong>@dose.StartDate.ToString("MMM dd, yyyy")</strong>
                                     </div>
                                 }
                             </div>

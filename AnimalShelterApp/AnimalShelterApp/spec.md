@@ -173,18 +173,18 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 **Testing Guide for Start/End Date Functionality:**
 
 **Phase 1: Build and Run**
-- [ ] Run `dotnet build` to ensure no compilation errors
-- [ ] Run `dotnet run` and open browser to application
-- [ ] Login/register test user (test@shelter.com / password123)
+- [x] Run `dotnet build` to ensure no compilation errors
+- [x] Run `dotnet run` and open browser to application
+- [x] Login/register test user (test@shelter.com / password123)
 
 **Phase 2: Set Up Test Data**
-- [ ] Add test animal: Name: "Buddy", Species: "Dog", Breed: "Golden Retriever"
-- [ ] Add test medication: Name: "Amoxicillin", Dosage: "250mg", Instructions: "Antibiotic"
+- [x] Add test animal: Name: "Buddy", Species: "Dog", Breed: "Golden Retriever"
+- [x] Add test medication: Name: "Amoxicillin", Dosage: "250mg", Instructions: "Antibiotic"
 
 **Phase 3: Test Backend (Database Level)**
-- [ ] Create scheduled dose with Start Date (tomorrow) and End Date (7 days from tomorrow)
-- [ ] Verify Firestore API call includes startDate, endDate, and isIndefinite fields
-- [ ] Create indefinite scheduled dose (IsIndefinite: true, EndDate: null)
+- [x] Create scheduled dose with Start Date (tomorrow) and End Date (7 days from tomorrow)
+- [x] Verify Firestore API call includes startDate, endDate, and isIndefinite fields
+- [x] Create indefinite scheduled dose (IsIndefinite: true, EndDate: null)
 
 **Phase 4: Test Dashboard Logic**
 - [ ] Verify medication starting tomorrow does NOT appear on today's dashboard
