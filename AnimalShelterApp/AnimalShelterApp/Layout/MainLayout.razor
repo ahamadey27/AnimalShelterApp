@@ -1,7 +1,7 @@
 ﻿@namespace AnimalShelterApp.Layout
 @inherits LayoutComponentBase
-@inject AuthenticationStateProvider AuthenticationStateProvider
-@implements IDisposable
+@using AnimalShelterApp.Services
+@inject AuthService AuthService
 
 <div class="page">
     <div class="sidebar">
@@ -18,23 +18,3 @@
         </article>
     </main>
 </div>
-
-@code {
-    protected override void OnInitialized()
-    {
-        // Subscribe to the built-in AuthenticationStateChanged event
-        AuthenticationStateProvider.AuthenticationStateChanged += HandleAuthStateChanged;
-    }
-
-    private async void HandleAuthStateChanged(Task<AuthenticationState> authState)
-    {
-        // Re-render the component when the authentication state changes
-        await InvokeAsync(StateHasChanged);
-    }
-
-    // Unsubscribe from the event when the component is destroyed
-    public void Dispose()
-    {
-        AuthenticationStateProvider.AuthenticationStateChanged -= HandleAuthStateChanged;
-    }
-}
