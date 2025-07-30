@@ -170,6 +170,59 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 - [x] Add UI toggle between "End Date" and "Indefinite" options
 - [x] Update dashboard logic to respect start/end dates
 
+**Testing Guide for Start/End Date Functionality:**
+
+**Phase 1: Build and Run**
+- [ ] Run `dotnet build` to ensure no compilation errors
+- [ ] Run `dotnet run` and open browser to application
+- [ ] Login/register test user (test@shelter.com / password123)
+
+**Phase 2: Set Up Test Data**
+- [ ] Add test animal: Name: "Buddy", Species: "Dog", Breed: "Golden Retriever"
+- [ ] Add test medication: Name: "Amoxicillin", Dosage: "250mg", Instructions: "Antibiotic"
+
+**Phase 3: Test Backend (Database Level)**
+- [ ] Create scheduled dose with Start Date (tomorrow) and End Date (7 days from tomorrow)
+- [ ] Verify Firestore API call includes startDate, endDate, and isIndefinite fields
+- [ ] Create indefinite scheduled dose (IsIndefinite: true, EndDate: null)
+
+**Phase 4: Test Dashboard Logic**
+- [ ] Verify medication starting tomorrow does NOT appear on today's dashboard
+- [ ] Change start date to today - medication should appear on dashboard
+- [ ] Verify indefinite medications always appear (when start date is today or earlier)
+- [ ] Test expired medications (end date yesterday) do NOT appear
+
+**Phase 5: Test Edge Cases**
+- [ ] Daily medication for 10 days
+- [ ] Every other day for 2 weeks
+- [ ] Weekly indefinitely
+- [ ] Medication with start date 3 days ago, end date yesterday (should not appear)
+
+**Phase 6: Verify Data Persistence**
+- [ ] Log out and log back in - verify all scheduled doses persist with correct dates
+- [ ] Test across browser sessions
+- [ ] Verify dashboard continues to respect date filtering
+
+**Phase 7: Browser Testing**
+- [ ] Test in Chrome, Firefox, Edge, Safari (if available)
+- [ ] Check browser console for JavaScript errors
+- [ ] Verify Network tab shows successful API calls
+
+**Success Indicators:**
+- ✅ Start/End dates save correctly to Firestore
+- ✅ Dashboard only shows medications active today
+- ✅ Indefinite medications continue to appear
+- ✅ Expired medications don't appear
+- ✅ No JavaScript errors in browser console
+- ✅ Data persists across browser sessions
+
+**Debugging Checklist if Issues:**
+- [ ] Check Browser Console (F12 → Console) for JavaScript errors
+- [ ] Check Network Tab (F12 → Network) for failed API calls
+- [ ] Check Firestore Console in Firebase for saved data
+- [ ] Add console.log statements in C# code
+- [ ] Use browser debugger breakpoints
+
 ### Step 3: Medication & Scheduling
 - [x] Create a simple UI to manage a list of common medications for the shelter.
 - [x] On the "Animal Detail" page, build the UI to schedule medications. This will create `ScheduledDose` documents in Firestore.
