@@ -721,14 +721,14 @@ namespace AnimalShelterApp.Services
                 { "dosesPerDay", new { integerValue = dose.DosesPerDay.ToString() } },
                 { "timeSlots", new { arrayValue = new { values = timeSlotsArray.Select(t => new { stringValue = t }).ToArray() } } },
                 { "foodRelationship", new { stringValue = dose.FoodRelationship.ToString() } },
-                { "startDate", new { timestampValue = dose.StartDate.ToUniversalTime().ToString("o") } },
+                { "startDate", new { stringValue = dose.StartDate.ToString("yyyy-MM-dd") } },
                 { "isIndefinite", new { booleanValue = dose.IsIndefinite } }
             };
 
             // Add endDate conditionally
             if (dose.EndDate.HasValue)
             {
-                fields["endDate"] = new { timestampValue = dose.EndDate.Value.ToUniversalTime().ToString("o") };
+                fields["endDate"] = new { stringValue = dose.EndDate.Value.ToString("yyyy-MM-dd") };
             }
             else
             {
@@ -783,14 +783,14 @@ namespace AnimalShelterApp.Services
                 { "dosesPerDay", new { integerValue = dose.DosesPerDay.ToString() } },
                 { "timeSlots", new { arrayValue = new { values = dose.TimeSlots.Select(t => new { stringValue = t }).ToArray() } } },
                 { "foodRelationship", new { stringValue = dose.FoodRelationship.ToString() } },
-                { "startDate", new { timestampValue = dose.StartDate.ToUniversalTime().ToString("o") } },
+                { "startDate", new { stringValue = dose.StartDate.ToString("yyyy-MM-dd") } },
                 { "isIndefinite", new { booleanValue = dose.IsIndefinite } }
             };
 
             // Add endDate conditionally
             if (dose.EndDate.HasValue)
             {
-                fields["endDate"] = new { timestampValue = dose.EndDate.Value.ToUniversalTime().ToString("o") };
+                fields["endDate"] = new { stringValue = dose.EndDate.Value.ToString("yyyy-MM-dd") };
             }
             else
             {
@@ -1288,14 +1288,13 @@ namespace AnimalShelterApp.Services
                 FoodRelationship = fields.TryGetProperty("foodRelationship", out var foodProp) && 
                                  Enum.TryParse<FoodRelationship>(foodProp.GetProperty("stringValue").GetString(), out var foodRelationship) 
                                  ? foodRelationship : FoodRelationship.DoesNotMatter,
-                // New Start/End Date fields
-                StartDate = fields.TryGetProperty("startDate", out var startDateProp) && 
-                          DateTime.TryParse(startDateProp.GetProperty("timestampValue").GetString(), out var startDate) 
-                          ? startDate : DateTime.Today,
-                EndDate = fields.TryGetProperty("endDate", out var endDateProp) && 
-                        endDateProp.TryGetProperty("timestampValue", out var endTimestamp) &&
-                        DateTime.TryParse(endTimestamp.GetString(), out var endDate) 
-                        ? endDate : null,
+                // New Start/End Date fields with timezone-safe parsing
+                StartDate = fields.TryGetProperty("startDate", out var startDateProp) ? 
+                    (startDateProp.TryGetProperty("stringValue", out var startDateStr) && DateTime.TryParse(startDateStr.GetString(), out var startDateParsed) ? startDateParsed :
+                     startDateProp.TryGetProperty("timestampValue", out var startTimestamp) && DateTime.TryParse(startTimestamp.GetString(), out var startTimestampParsed) ? startTimestampParsed.Date : DateTime.Today) : DateTime.Today,
+                EndDate = fields.TryGetProperty("endDate", out var endDateProp) && !endDateProp.TryGetProperty("nullValue", out var _) ? 
+                    (endDateProp.TryGetProperty("stringValue", out var endDateStr) && DateTime.TryParse(endDateStr.GetString(), out var endDateParsed) ? endDateParsed :
+                     endDateProp.TryGetProperty("timestampValue", out var endTimestamp) && DateTime.TryParse(endTimestamp.GetString(), out var endTimestampParsed) ? endTimestampParsed.Date : (DateTime?)null) : null,
                 IsIndefinite = fields.TryGetProperty("isIndefinite", out var indefiniteProp) && 
                              indefiniteProp.TryGetProperty("booleanValue", out var indefiniteVal) 
                              ? indefiniteVal.GetBoolean() : true,
