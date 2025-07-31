@@ -955,12 +955,18 @@ else
     {
         if (animal == null || AuthService.CurrentUser == null || string.IsNullOrEmpty(AuthService.Token)) return;
 
+        Console.WriteLine($"[DEBUG] ScheduleDose called - isEditingDose: {isEditingDose}");
+        Console.WriteLine($"[DEBUG] Before save - newDose.StartDate: {newDose.StartDate:yyyy-MM-dd}");
+        Console.WriteLine($"[DEBUG] Before save - editingStartDate: {editingStartDate}");
+
         bool success;
         
         if (isEditingDose && editingDose != null)
         {
             // Update existing dose
             newDose.AnimalId = animal.Id;
+            Console.WriteLine($"[DEBUG] Updating dose ID: {newDose.Id}");
+            Console.WriteLine($"[DEBUG] Final StartDate being saved: {newDose.StartDate:yyyy-MM-dd}");
             success = await FirestoreService.UpdateScheduledDoseAsync(AuthService.CurrentUser.ShelterId, newDose, AuthService.Token);
         }
         else
@@ -968,8 +974,12 @@ else
             // Create new dose
             newDose.Id = Guid.NewGuid().ToString("N").Substring(0, 12);
             newDose.AnimalId = animal.Id;
+            Console.WriteLine($"[DEBUG] Creating new dose ID: {newDose.Id}");
+            Console.WriteLine($"[DEBUG] Final StartDate being saved: {newDose.StartDate:yyyy-MM-dd}");
             success = await FirestoreService.CreateScheduledDoseAsync(AuthService.CurrentUser.ShelterId, newDose, AuthService.Token);
         }
+
+        Console.WriteLine($"[DEBUG] Save operation success: {success}");
 
         if (success)
         {
