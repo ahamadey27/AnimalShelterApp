@@ -473,8 +473,8 @@ else
                                 {
                                     <!-- Use plain HTML input to avoid Blazor InputDate binding issues -->
                                     <input type="date" class="form-control" 
-                                           value="@newDose.StartDate.ToString("yyyy-MM-dd")"
-                                           @onchange="@((ChangeEventArgs e) => OnStartDateChanged(e))" />
+                                           value="@editingStartDate"
+                                           @onchange="@((ChangeEventArgs e) => OnEditingStartDateChanged(e))" />
                                 }
                                 else
                                 {
@@ -482,7 +482,7 @@ else
                                 }
                                 <div class="form-text">When should this medication schedule begin?</div>
                                 @* Debug info *@
-                                <div class="text-muted small">DEBUG: Current value = @newDose.StartDate.ToString("yyyy-MM-dd"), isEditingDose = @isEditingDose</div>
+                                <div class="text-muted small">DEBUG: newDose.StartDate = @newDose.StartDate.ToString("yyyy-MM-dd"), editingStartDate = @editingStartDate, isEditingDose = @isEditingDose</div>
                             </div>
                             
                             <div class="mb-3">
@@ -630,6 +630,7 @@ else
     };
     private ScheduledDose? editingDose = null;
     private bool isEditingDose = false;
+    private string editingStartDate = "";
     private DateTime lastUsedStartDate = DateTime.Today; // Remember user's preferred start date
 
     // Property to handle Duration changes with automatic End Date calculation
@@ -1193,10 +1194,14 @@ else
             DurationInDays = dose.DurationInDays
         };
         
+        // Initialize the editing start date string
+        editingStartDate = newDose.StartDate.ToString("yyyy-MM-dd");
+        
         Console.WriteLine($"[DEBUG] After creating newDose object:");
         Console.WriteLine($"[DEBUG] newDose.StartDate: {newDose.StartDate:yyyy-MM-dd}");
         Console.WriteLine($"[DEBUG] newDose.EndDate: {newDose.EndDate?.ToString("yyyy-MM-dd") ?? "null"}");
         Console.WriteLine($"[DEBUG] newDose.IsIndefinite: {newDose.IsIndefinite}");
+        Console.WriteLine($"[DEBUG] editingStartDate: {editingStartDate}");
         Console.WriteLine($"[DEBUG] isEditingDose: {isEditingDose}");
         
         // Force UI update to reflect the loaded state
@@ -1267,6 +1272,28 @@ else
                 lastUsedStartDate = selectedDate;
             }
             
+            StateHasChanged();
+        }
+    }
+
+    private void OnEditingStartDateChanged(ChangeEventArgs e)
+    {
+        Console.WriteLine($"[DEBUG] OnEditingStartDateChanged called with: {e.Value}");
+        Console.WriteLine($"[DEBUG] isEditingDose: {isEditingDose}");
+        
+        if (DateTime.TryParse(e.Value?.ToString(), out var newDate))
+        {
+            // Update both the string and the actual object
+            editingStartDate = newDate.ToString("yyyy-MM-dd");
+            newDose.StartDate = newDate;
+            Console.WriteLine($"[DEBUG] Set editingStartDate to: {editingStartDate}");
+            Console.WriteLine($"[DEBUG] Set newDose.StartDate to: {newDose.StartDate}");
+            
+            if (!newDose.IsIndefinite && newDose.DurationInDays.HasValue)
+            {
+                newDose.EndDate = newDate.AddDays(newDose.DurationInDays.Value);
+                Console.WriteLine($"[DEBUG] Updated newDose.EndDate to: {newDose.EndDate}");
+            }
             StateHasChanged();
         }
     }
