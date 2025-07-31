@@ -481,8 +481,6 @@ else
                                     <InputDate @bind-Value="StartDateProperty" class="form-control" />
                                 }
                                 <div class="form-text">When should this medication schedule begin?</div>
-                                @* Debug info *@
-                                <div class="text-muted small">DEBUG: newDose.StartDate = @newDose.StartDate.ToString("yyyy-MM-dd"), editingStartDate = @editingStartDate, isEditingDose = @isEditingDose</div>
                             </div>
                             
                             <div class="mb-3">
@@ -529,14 +527,6 @@ else
                                     <div class="alert alert-info">
                                         <i class="oi oi-info"></i> This schedule will run for @calculatedDays day@(calculatedDays != 1 ? "s" : "") 
                                         (from @newDose.StartDate.ToString("MMM dd, yyyy") to @newDose.EndDate.Value.ToString("MMM dd, yyyy"))
-                                    </div>
-                                }
-                                
-                                @* Debug info during editing *@
-                                @if (isEditingDose)
-                                {
-                                    <div class="alert alert-warning">
-                                        <small><strong>Debug:</strong> Editing mode - IsIndefinite: @newDose.IsIndefinite, EndDate: @(newDose.EndDate?.ToString("yyyy-MM-dd") ?? "null"), Duration: @(newDose.DurationInDays?.ToString() ?? "null")</small>
                                     </div>
                                 }
                             }
@@ -685,23 +675,18 @@ else
     // Property to handle Start Date changes and remember user preference
     private DateTime StartDateProperty
     {
-        get 
+        get
         {
-            Console.WriteLine($"[DEBUG] StartDateProperty GET called: {newDose.StartDate:yyyy-MM-dd}, isEditingDose: {isEditingDose}");
             return newDose.StartDate;
         }
         set
         {
-            Console.WriteLine($"[DEBUG] StartDateProperty SET called: {value:yyyy-MM-dd}, isEditingDose: {isEditingDose}");
-            Console.WriteLine($"[DEBUG] Old StartDate: {newDose.StartDate:yyyy-MM-dd}");
-            
             newDose.StartDate = value;
             
             // Only remember user's preference when creating new doses, not when editing existing ones
             if (!isEditingDose)
             {
                 lastUsedStartDate = value; // Remember user's preference for new doses
-                Console.WriteLine($"[DEBUG] Updated lastUsedStartDate to: {lastUsedStartDate:yyyy-MM-dd}");
             }
             
             // Only recalculate end date if duration is set AND we're not in editing mode
@@ -710,21 +695,14 @@ else
             {
                 var oldEndDate = newDose.EndDate;
                 newDose.EndDate = value.AddDays(newDose.DurationInDays.Value - 1);
-                Console.WriteLine($"[DEBUG] Recalculated EndDate from {oldEndDate?.ToString("yyyy-MM-dd") ?? "null"} to {newDose.EndDate?.ToString("yyyy-MM-dd")}");
             }
             
-            Console.WriteLine($"[DEBUG] New StartDate: {newDose.StartDate:yyyy-MM-dd}");
             StateHasChanged();
         }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (isEditingDose)
-        {
-            Console.WriteLine($"[DEBUG] OnAfterRenderAsync - isEditingDose: {isEditingDose}");
-            Console.WriteLine($"[DEBUG] OnAfterRenderAsync - newDose.StartDate: {newDose.StartDate:yyyy-MM-dd}");
-        }
         await base.OnAfterRenderAsync(firstRender);
     }
 
@@ -955,18 +933,12 @@ else
     {
         if (animal == null || AuthService.CurrentUser == null || string.IsNullOrEmpty(AuthService.Token)) return;
 
-        Console.WriteLine($"[DEBUG] ScheduleDose called - isEditingDose: {isEditingDose}");
-        Console.WriteLine($"[DEBUG] Before save - newDose.StartDate: {newDose.StartDate:yyyy-MM-dd}");
-        Console.WriteLine($"[DEBUG] Before save - editingStartDate: {editingStartDate}");
-
         bool success;
         
         if (isEditingDose && editingDose != null)
         {
             // Update existing dose
             newDose.AnimalId = animal.Id;
-            Console.WriteLine($"[DEBUG] Updating dose ID: {newDose.Id}");
-            Console.WriteLine($"[DEBUG] Final StartDate being saved: {newDose.StartDate:yyyy-MM-dd}");
             success = await FirestoreService.UpdateScheduledDoseAsync(AuthService.CurrentUser.ShelterId, newDose, AuthService.Token);
         }
         else
@@ -974,12 +946,8 @@ else
             // Create new dose
             newDose.Id = Guid.NewGuid().ToString("N").Substring(0, 12);
             newDose.AnimalId = animal.Id;
-            Console.WriteLine($"[DEBUG] Creating new dose ID: {newDose.Id}");
-            Console.WriteLine($"[DEBUG] Final StartDate being saved: {newDose.StartDate:yyyy-MM-dd}");
             success = await FirestoreService.CreateScheduledDoseAsync(AuthService.CurrentUser.ShelterId, newDose, AuthService.Token);
         }
-
-        Console.WriteLine($"[DEBUG] Save operation success: {success}");
 
         if (success)
         {
@@ -1173,11 +1141,6 @@ else
     // Edit and Delete methods for scheduled doses
     private void EditDose(ScheduledDose dose)
     {
-        Console.WriteLine($"[DEBUG] EditDose called for dose ID: {dose.Id}");
-        Console.WriteLine($"[DEBUG] Original dose StartDate: {dose.StartDate:yyyy-MM-dd}");
-        Console.WriteLine($"[DEBUG] Original dose EndDate: {dose.EndDate?.ToString("yyyy-MM-dd") ?? "null"}");
-        Console.WriteLine($"[DEBUG] Original dose IsIndefinite: {dose.IsIndefinite}");
-        
         editingDose = dose;
         isEditingDose = true;
         
@@ -1207,19 +1170,8 @@ else
         // Initialize the editing start date string
         editingStartDate = newDose.StartDate.ToString("yyyy-MM-dd");
         
-        Console.WriteLine($"[DEBUG] After creating newDose object:");
-        Console.WriteLine($"[DEBUG] newDose.StartDate: {newDose.StartDate:yyyy-MM-dd}");
-        Console.WriteLine($"[DEBUG] newDose.EndDate: {newDose.EndDate?.ToString("yyyy-MM-dd") ?? "null"}");
-        Console.WriteLine($"[DEBUG] newDose.IsIndefinite: {newDose.IsIndefinite}");
-        Console.WriteLine($"[DEBUG] editingStartDate: {editingStartDate}");
-        Console.WriteLine($"[DEBUG] isEditingDose: {isEditingDose}");
-        
         // Force UI update to reflect the loaded state
         StateHasChanged();
-        
-        Console.WriteLine($"[DEBUG] After StateHasChanged:");
-        Console.WriteLine($"[DEBUG] newDose.StartDate: {newDose.StartDate:yyyy-MM-dd}");
-        Console.WriteLine($"[DEBUG] newDose.EndDate: {newDose.EndDate?.ToString("yyyy-MM-dd") ?? "null"}");
     }
 
     private async Task DeleteDose(ScheduledDose dose)
@@ -1272,8 +1224,6 @@ else
     {
         if (DateTime.TryParse(e.Value?.ToString(), out var selectedDate))
         {
-            Console.WriteLine($"[DEBUG] OnStartDateChanged called with: {selectedDate:yyyy-MM-dd}");
-            Console.WriteLine($"[DEBUG] isEditingDose: {isEditingDose}");
             newDose.StartDate = selectedDate;
             
             // Only remember user preference when creating new doses
@@ -1288,21 +1238,15 @@ else
 
     private void OnEditingStartDateChanged(ChangeEventArgs e)
     {
-        Console.WriteLine($"[DEBUG] OnEditingStartDateChanged called with: {e.Value}");
-        Console.WriteLine($"[DEBUG] isEditingDose: {isEditingDose}");
-        
         if (DateTime.TryParse(e.Value?.ToString(), out var newDate))
         {
             // Update both the string and the actual object
             editingStartDate = newDate.ToString("yyyy-MM-dd");
             newDose.StartDate = newDate;
-            Console.WriteLine($"[DEBUG] Set editingStartDate to: {editingStartDate}");
-            Console.WriteLine($"[DEBUG] Set newDose.StartDate to: {newDose.StartDate}");
             
             if (!newDose.IsIndefinite && newDose.DurationInDays.HasValue)
             {
                 newDose.EndDate = newDate.AddDays(newDose.DurationInDays.Value);
-                Console.WriteLine($"[DEBUG] Updated newDose.EndDate to: {newDose.EndDate}");
             }
             StateHasChanged();
         }

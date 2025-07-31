@@ -941,7 +941,21 @@ namespace AnimalShelterApp.Services
                         TimeSlots = timeSlots,
                         FoodRelationship = fields.TryGetProperty("foodRelationship", out var foodProp) && 
                                          Enum.TryParse<FoodRelationship>(foodProp.GetProperty("stringValue").GetString(), out var foodRelationship) 
-                                         ? foodRelationship : FoodRelationship.DoesNotMatter
+                                         ? foodRelationship : FoodRelationship.DoesNotMatter,
+                        // Date fields
+                        StartDate = fields.TryGetProperty("startDate", out var startDateProp) && 
+                                   DateTime.TryParse(startDateProp.GetProperty("stringValue").GetString(), out var startDate) 
+                                   ? startDate : DateTime.Today,
+                        EndDate = fields.TryGetProperty("endDate", out var endDateProp) && 
+                                 !endDateProp.TryGetProperty("nullValue", out _) &&
+                                 DateTime.TryParse(endDateProp.GetProperty("stringValue").GetString(), out var endDate) 
+                                 ? endDate : null,
+                        IsIndefinite = fields.TryGetProperty("isIndefinite", out var indefiniteProp) && 
+                                      indefiniteProp.GetProperty("booleanValue").GetBoolean(),
+                        DurationInDays = fields.TryGetProperty("durationInDays", out var durationProp) && 
+                                        !durationProp.TryGetProperty("nullValue", out _) &&
+                                        int.TryParse(durationProp.GetProperty("integerValue").GetString(), out var duration) 
+                                        ? duration : null
                     };
                     doses.Add(dose);
                 }
@@ -1041,7 +1055,21 @@ namespace AnimalShelterApp.Services
                         TimeSlots = timeSlots,
                         FoodRelationship = fields.TryGetProperty("foodRelationship", out var foodProp) && 
                                          Enum.TryParse<FoodRelationship>(foodProp.GetProperty("stringValue").GetString(), out var foodRelationship) 
-                                         ? foodRelationship : FoodRelationship.DoesNotMatter
+                                         ? foodRelationship : FoodRelationship.DoesNotMatter,
+                        // Date fields
+                        StartDate = fields.TryGetProperty("startDate", out var startDateProp) && 
+                                   DateTime.TryParse(startDateProp.GetProperty("stringValue").GetString(), out var startDate) 
+                                   ? startDate : DateTime.Today,
+                        EndDate = fields.TryGetProperty("endDate", out var endDateProp) && 
+                                 !endDateProp.TryGetProperty("nullValue", out _) &&
+                                 DateTime.TryParse(endDateProp.GetProperty("stringValue").GetString(), out var endDate) 
+                                 ? endDate : null,
+                        IsIndefinite = fields.TryGetProperty("isIndefinite", out var indefiniteProp) && 
+                                      indefiniteProp.GetProperty("booleanValue").GetBoolean(),
+                        DurationInDays = fields.TryGetProperty("durationInDays", out var durationProp) && 
+                                        !durationProp.TryGetProperty("nullValue", out _) &&
+                                        int.TryParse(durationProp.GetProperty("integerValue").GetString(), out var duration) 
+                                        ? duration : null
                     };
                     doses.Add(dose);
                 }
