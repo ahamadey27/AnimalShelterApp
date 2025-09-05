@@ -60,7 +60,20 @@ namespace AnimalShelterApp.Services
         {
             try
             {
+                if (string.IsNullOrEmpty(authToken))
+                {
+                    Console.WriteLine("Error: Auth token is null or empty");
+                    return false;
+                }
+
+                if (string.IsNullOrEmpty(_projectId))
+                {
+                    Console.WriteLine("Error: Project ID is not configured");
+                    return false;
+                }
+
                 var url = $"https://firestore.googleapis.com/v1/projects/{_projectId}/databases/(default)/documents/shelters?documentId={shelter.Id}";
+                Console.WriteLine($"Creating shelter at URL: {url}");
 
                 var content = new
                 {
@@ -78,11 +91,13 @@ namespace AnimalShelterApp.Services
 
                 // Add auth token
                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+                Console.WriteLine($"Authorization header set with token: {authToken.Substring(0, Math.Min(20, authToken.Length))}...");
 
                 var response = await _httpClient.SendAsync(request);
 
                 if (response.IsSuccessStatusCode)
                 {
+                    Console.WriteLine("Shelter created successfully in Firestore");
                     return true;
                 }
                 else
@@ -91,12 +106,25 @@ namespace AnimalShelterApp.Services
                     var errorContent = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"HTTP Error: {(int)response.StatusCode} {response.StatusCode}");
                     Console.WriteLine($"Error response: {errorContent}");
+                    
+                    // Check for specific permission errors
+                    if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    {
+                        Console.WriteLine("PERMISSION DENIED: This is likely a Firestore security rules issue.");
+                        Console.WriteLine("Please check your Firestore security rules in the Firebase Console.");
+                        Console.WriteLine("The user needs permission to write to the 'shelters' collection.");
+                    }
+                    
                     return false;
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error creating shelter: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                }
                 return false;
             }
         }

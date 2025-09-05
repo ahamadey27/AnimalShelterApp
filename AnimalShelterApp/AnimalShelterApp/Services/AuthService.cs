@@ -140,12 +140,30 @@ namespace AnimalShelterApp.Services
                     var idToken = responseContent.GetProperty("idToken").GetString();
                     var uid = responseContent.GetProperty("localId").GetString();
 
-                    if (idToken == null || uid == null) return false;
+                    if (idToken == null || uid == null) 
+                    {
+                        Console.WriteLine("Registration failed: Missing idToken or uid in response");
+                        return false;
+                    }
+
+                    Console.WriteLine($"User authenticated successfully. UID: {uid}");
+                    Console.WriteLine($"Token received: {idToken.Substring(0, Math.Min(20, idToken.Length))}...");
+
+                    // Set authorization header for subsequent requests
+                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", idToken);
 
                     var newShelter = new Shelter { Id = Guid.NewGuid().ToString(), Name = shelterName, Address = shelterAddress };
+                    Console.WriteLine($"Attempting to create shelter with ID: {newShelter.Id}");
+                    
                     var shelterCreated = await _firestoreService.CreateShelterAsync(newShelter, idToken);
 
-                    if (!shelterCreated) return false;
+                    if (!shelterCreated) 
+                    {
+                        Console.WriteLine("Failed to create shelter in Firestore");
+                        return false;
+                    }
+
+                    Console.WriteLine("Shelter created successfully, now creating user profile");
 
                     var userProfile = new UserProfile { Uid = uid, Email = email, DisplayName = displayName, ShelterId = newShelter.Id };
                     var profileCreated = await _firestoreService.CreateUserProfileAsync(userProfile, idToken);
@@ -156,15 +174,32 @@ namespace AnimalShelterApp.Services
                         await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", idToken);
                         await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "userProfile", userJson);
 
+                        CurrentUser = userProfile;
+                        Token = idToken;
+                        
                         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+                        Console.WriteLine("Registration completed successfully");
                         return true;
                     }
+                    else
+                    {
+                        Console.WriteLine("Failed to create user profile in Firestore");
+                    }
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Firebase Auth registration failed: {response.StatusCode} - {errorContent}");
                 }
                 return false;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Registration exception: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                }
                 return false;
             }
         }

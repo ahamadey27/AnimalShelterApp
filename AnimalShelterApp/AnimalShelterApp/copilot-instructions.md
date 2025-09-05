@@ -24,5 +24,7 @@ how the program is working from an intermediate student's standpoint
 * Run application from C:\Users\hamad\Documents\GitHub\AnimalShelterApp\AnimalShelterApp\AnimalShelterApp> using the command `dotnet run`
 * Always work with the directory path C:\Users\hamad\Documents\GitHub\AnimalShelterApp\AnimalShelterApp\AnimalShelterApp> when running commands
 
-- Do not name classes and methods the same in C#. For example, avoid having a class named `MusicTheoryService` and a method named `MusicTheoryService` in the same file. Use clear, distinct names for each class and method to prevent confusion and errors.
+* Do not name classes and methods the same in C#. For example, avoid having a class named `MusicTheoryService` and a method named `MusicTheoryService` in the same file. Use clear, distinct names for each class and method to prevent confusion and errors.
+
+* run all new command line commands in the correct directory: cd C:\Users\hamad\OneDrive\Documentos\GitHub\AnimalShelterApp\AnimalShelterApp\AnimalShelterApp
 
