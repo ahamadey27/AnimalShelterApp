@@ -25,5 +25,9 @@ how the program is working from an intermediate student's standpoint
 * Always work with the directory path C:\Users\hamad\Documents\GitHub\AnimalShelterApp\AnimalShelterApp\AnimalShelterApp> when running commands
 * Please keep answers as brief as possible by focusing on bullet points and do not give me summaries of what you have done.
 
-- Do not name classes and methods the same in C#. For example, avoid having a class named `MusicTheoryService` and a method named `MusicTheoryService` in the same file. Use clear, distinct names for each class and method to prevent confusion and errors.
+* Do not name classes and methods the same in C#. For example, avoid having a class named `MusicTheoryService` and a method named `MusicTheoryService` in the same file. Use clear, distinct names for each class and method to prevent confusion and errors.
+
+* When running opening a new terminal , start by using the correct path: cd C:\Users\hamad\OneDrive\Documentos\GitHub\AnimalShelterApp\AnimalShelterApp\AnimalShelterApp
+
+* test user: hamadey@gmail.com / password123
 
