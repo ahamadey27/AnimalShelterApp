@@ -87,16 +87,37 @@ namespace AnimalShelterApp.Services
                     if (idToken == null || uid == null) return false;
 
                     var userProfile = await _firestoreService.GetUserProfileAsync(uid, idToken);
-                    if (userProfile != null)
+                    if (userProfile == null)
                     {
-                        var userJson = JsonSerializer.Serialize(userProfile);
-                        await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", idToken);
-                        await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "userProfile", userJson);
-
-                        NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
-                        return true;
+                        Console.WriteLine("Login failed: user profile not found in Firestore.");
+                        return false;
                     }
+
+                    if (string.IsNullOrEmpty(userProfile.ShelterId))
+                    {
+                        Console.WriteLine("Login failed: user profile missing ShelterId.");
+                        return false;
+                    }
+
+                    var userJson = JsonSerializer.Serialize(userProfile);
+                    await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", idToken);
+                    await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "userProfile", userJson);
+
+                    NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+                    return true;
                 }
+
+                // Log response body for debugging when sign-in fails
+                try
+                {
+                    var errorBody = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Login failed. HTTP {(int)response.StatusCode} - {response.StatusCode}. Response: {errorBody}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Login failed and could not read response body: {ex.Message}");
+                }
+
                 return false;
             }
             catch (Exception ex)

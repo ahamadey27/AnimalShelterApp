@@ -156,7 +156,7 @@ namespace AnimalShelterApp.Services
         /// <summary>
         /// Gets a user profile from Firestore by user ID
         /// </summary>
-        public async Task<UserProfile> GetUserProfileAsync(string uid, string authToken)
+    public async Task<UserProfile?> GetUserProfileAsync(string uid, string authToken)
         {
             try
             {
@@ -169,7 +169,7 @@ namespace AnimalShelterApp.Services
 
                 var response = await _httpClient.SendAsync(request);
 
-                if (response.IsSuccessStatusCode)
+        if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadFromJsonAsync<JsonElement>();
 
@@ -181,16 +181,17 @@ namespace AnimalShelterApp.Services
                         Uid = fields.GetProperty("uid").GetProperty("stringValue").GetString() ?? string.Empty,
                         Email = fields.GetProperty("email").GetProperty("stringValue").GetString() ?? string.Empty,
                         DisplayName = fields.GetProperty("displayName").GetProperty("stringValue").GetString() ?? string.Empty,
-                        ShelterId = fields.GetProperty("shelterId").GetProperty("stringValue").GetString() ?? string.Empty
+            ShelterId = fields.GetProperty("shelterId").GetProperty("stringValue").GetString() ?? string.Empty
                     };
                 }
 
-                return new UserProfile();
+        // Non-success response: return null to indicate profile couldn't be retrieved
+        return null;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error getting user profile: {ex.Message}");
-                return new UserProfile();
+        return null;
             }
         }
 
