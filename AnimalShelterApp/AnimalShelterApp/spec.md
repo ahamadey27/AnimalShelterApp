@@ -309,7 +309,7 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 ## Phase 6: Ongoing UI / Frontend changes
 
 ### Step 1: 
-- [ ] Photo under animals/edit - Photo is cropped incorrectly. Should span the length from top of 'Animal ID' text box to end of 'Weight' text box
+- [x] Photo under animals/edit - Photo is cropped incorrectly. Should span the length from top of 'Animal ID' text box to end of 'Weight' text box
 - [ ] "Schedule for" under 'Upcoming' in /dashboard - text after 'Schedule for' time does not exist 
 - [ ] "Schedule for" under 'Completed' in /dashboard - text after 'Schedule for' time does not exist 
 - [ ] "Actions" under 'Medication Schedule' / 'Medication' in animals/edit (for scheduled medication) - Change the blue and red edit/delete icons to "Edit" and "Delete" that's consistent with the other edit/delete functions 

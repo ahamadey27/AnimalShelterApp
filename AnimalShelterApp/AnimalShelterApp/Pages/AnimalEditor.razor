@@ -563,20 +563,27 @@ else
 <style>
     .image-upload-container {
         position: relative;
-        height: 200px;
+        /* Height calculated to align with form fields: Animal ID (58px) + Name (58px) + Species/Breed/Color row (58px) + DOB (58px) + Weight row (58px) + margins */
+        height: 375px;
         cursor: pointer;
+        border-radius: 8px;
+        overflow: hidden;
     }
     
     .upload-preview {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        object-position: center;
+        border-radius: 8px;
     }
     
     .upload-placeholder {
         width: 100%;
         height: 100%;
         background-color: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
     }
     
     .photo-input {
