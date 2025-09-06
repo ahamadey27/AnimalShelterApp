@@ -28,3 +28,7 @@ how the program is working from an intermediate student's standpoint
 
 * run all new command line commands in the correct directory: cd C:\Users\hamad\OneDrive\Documentos\GitHub\AnimalShelterApp\AnimalShelterApp\AnimalShelterApp
 
+* Keep answers as as short as possible and keep summary of your actions as brief as possible. 
+
+* Do not show your thinking when solving tasks 
+
