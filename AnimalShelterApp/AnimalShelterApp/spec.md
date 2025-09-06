@@ -305,3 +305,11 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 ### Step 5: Plan for Monetization
 - [ ] Once the product is stable and validated by your initial users, you can confidently implement the planned pricing model (Free for 5 animals, then $19/month).
 - [ ] This will involve integrating a payment provider like Stripe.
+
+## Phase 6: Ongoing UI / Frontend changes
+
+### Phase 1: 
+- [ ] Photo under animals/edit - Photo is cropped incorrectly. Should span the length from top of 'Animal ID' text box to end of 'Weight' text box
+- [ ] "Schedule for" under 'Upcoming' in /dashboard - text after 'Schedule for' time does not exist 
+- [ ] "Schedule for" under 'Completed' in /dashboard - text after 'Schedule for' time does not exist 
+- [ ] "Actions" under 'Medication Schedule' / 'Medication' in animals/edit (for scheduled medication) - Change the blue and red edit/delete icons to "Edit" and "Delete" that's consistent with the other edit/delete functions 
