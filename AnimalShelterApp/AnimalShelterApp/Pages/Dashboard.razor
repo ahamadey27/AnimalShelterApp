@@ -77,10 +77,10 @@ else
         <div>
             <h5 class="mb-1">@dose.MedicationName</h5>
             <p class="mb-1">For: <strong>@dose.AnimalName</strong> (@dose.Dosage)</p>
-            <small class="text-muted">Scheduled for @dose.TimeOfDay</small>
+            <small class="text-muted">Scheduled for @FormatScheduleTime(dose.TimeOfDay)</small>
             @if(dose.TimeAdministered.HasValue)
             {
-                <small class="d-block text-success-emphasis">Given at @dose.TimeAdministered.Value.ToShortTimeString()</small>
+                <small class="d-block text-success-emphasis">Given at @dose.TimeAdministered.Value.ToString("h:mm tt")</small>
             }
         </div>
         <div class="d-flex flex-column align-items-center justify-content-center">
@@ -306,5 +306,22 @@ else
         {
             errorMessage = "Failed to undo medication log. Please try again.";
         }
+    }
+
+    // Helper method to format time display consistently
+    private string FormatScheduleTime(string timeOfDay)
+    {
+        if (string.IsNullOrEmpty(timeOfDay))
+        {
+            return "time not specified";
+        }
+
+        if (TimeSpan.TryParse(timeOfDay, out var timeSpan))
+        {
+            var dateTime = DateTime.Today.Add(timeSpan);
+            return dateTime.ToString("h:mm tt"); // Formats as "8:00 AM" or "2:30 PM"
+        }
+
+        return timeOfDay; // Return original if parsing fails
     }
 }
