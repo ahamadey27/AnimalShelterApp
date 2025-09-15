@@ -16,12 +16,70 @@
     </div>
     <div class="d-flex align-items-center gap-2 position-relative">
         <span class="fs-5 text-muted">@selectedDate.ToLongDateString()</span>
-        <button class="btn btn-link" @onclick="BackToToday" disabled="@(selectedDate.Date == DateTime.Today)">Back to Today</button>
+        @if (selectedDate.Date != DateTime.Today)
+        {
+            <button class="btn btn-link" @onclick="BackToToday">Back to Today</button>
+        }
         <button class="btn btn-outline-secondary btn-sm" @onclick="ToggleDatePicker" aria-label="Open date picker">📅</button>
         @if (showDatePicker)
         {
-            <div class="datepicker-popover shadow rounded p-2 bg-white border">
-                <InputDate @bind-Value="pickerDate" class="form-control" @onchange="OnDatePicked" />
+            <div class="datepicker-popover shadow rounded p-2 bg-white border" style="position: absolute; top: 100%; right: 0; z-index: 1000; min-width: 260px;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="PrevMonth" aria-label="Previous month">&lt;</button>
+                    <div class="d-flex align-items-center gap-2">
+                        <strong>@visibleMonth.ToString("MMMM yyyy")</strong>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="NextMonth" aria-label="Next month">&gt;</button>
+                        <button type="button" class="btn-close" @onclick="() => showDatePicker = false" aria-label="Close"></button>
+                    </div>
+                </div>
+                @{ 
+                    var firstOfMonth = new DateTime(visibleMonth.Year, visibleMonth.Month, 1);
+                    var startOffset = (int)firstOfMonth.DayOfWeek; // Sunday = 0
+                    var daysInMonth = DateTime.DaysInMonth(firstOfMonth.Year, firstOfMonth.Month);
+                }
+                <table class="table table-sm table-borderless mb-0">
+                    <thead>
+                        <tr class="text-center text-muted">
+                            <th class="fw-normal">Su</th>
+                            <th class="fw-normal">Mo</th>
+                            <th class="fw-normal">Tu</th>
+                            <th class="fw-normal">We</th>
+                            <th class="fw-normal">Th</th>
+                            <th class="fw-normal">Fr</th>
+                            <th class="fw-normal">Sa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int week = 0; week < 6; week++)
+                        {
+                            <tr>
+                                @for (int dow = 0; dow < 7; dow++)
+                                {
+                                    var cellIndex = week * 7 + dow;
+                                    var dayNumber = cellIndex - startOffset + 1;
+                                    if (dayNumber < 1 || dayNumber > daysInMonth)
+                                    {
+                                        <td class="text-center align-middle" style="height: 2rem;">
+                                            <span class="text-muted">&nbsp;</span>
+                                        </td>
+                                    }
+                                    else
+                                    {
+                                        var date = new DateTime(firstOfMonth.Year, firstOfMonth.Month, dayNumber);
+                                        var isToday = date.Date == DateTime.Today;
+                                        var isSelected = date.Date == selectedDate.Date;
+                                        var btnClass = isSelected ? "btn btn-primary btn-sm w-100" : (isToday ? "btn btn-outline-primary btn-sm w-100" : "btn btn-light btn-sm w-100");
+                                        <td class="p-1" style="width: 2.5rem; height: 2.5rem;">
+                                            <button class="@btnClass" @onclick="() => SelectDate(date)" title="@date.ToLongDateString()">@dayNumber</button>
+                                        </td>
+                                    }
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
         }
     </div>
@@ -283,22 +341,29 @@ else
     }
 
     private bool showDatePicker = false;
-    private DateTime pickerDate = DateTime.Today;
+    private DateTime visibleMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
 
     private void ToggleDatePicker()
     {
-        pickerDate = selectedDate;
+        visibleMonth = new DateTime(selectedDate.Year, selectedDate.Month, 1);
         showDatePicker = !showDatePicker;
     }
 
-    private async Task OnDatePicked(ChangeEventArgs e)
+    private void PrevMonth()
     {
-        if (DateTime.TryParse(e.Value?.ToString(), out var picked))
-        {
-            selectedDate = picked;
-            showDatePicker = false;
-            await LoadDashboardDataAsync();
-        }
+        visibleMonth = visibleMonth.AddMonths(-1);
+    }
+
+    private void NextMonth()
+    {
+        visibleMonth = visibleMonth.AddMonths(1);
+    }
+
+    private async Task SelectDate(DateTime date)
+    {
+        selectedDate = date.Date;
+        showDatePicker = false;
+        await LoadDashboardDataAsync();
     }
 
     
@@ -341,7 +406,7 @@ else
 
         bool success = await FirestoreService.CreateDoseLogAsync(AuthService.CurrentUser.ShelterId, log, AuthService.Token);
 
-        if (success)
+    if (success)
         {
             // This is the important part: after logging, we re-run the query
             // that needs the composite index. This should trigger the error in the console.
@@ -395,8 +460,22 @@ else
             dose.LogId = "";
             
             // Determine if it should go to overdue or upcoming
+            // Reclassify based on selectedDate context
             var currentTime = TimeSpan.Parse(DateTime.Now.ToString("HH:mm"));
-            if (TimeSpan.TryParse(dose.TimeOfDay, out var scheduledTime) && scheduledTime < currentTime)
+            if (selectedDate.Date == DateTime.Today)
+            {
+                if (TimeSpan.TryParse(dose.TimeOfDay, out var scheduledTime) && scheduledTime < currentTime)
+                {
+                    overdueDoses.Add(dose);
+                    overdueDoses = overdueDoses.OrderBy(d => d.TimeOfDay).ToList();
+                }
+                else
+                {
+                    upcomingDoses.Add(dose);
+                    upcomingDoses = upcomingDoses.OrderBy(d => d.TimeOfDay).ToList();
+                }
+            }
+            else if (selectedDate.Date < DateTime.Today)
             {
                 overdueDoses.Add(dose);
                 overdueDoses = overdueDoses.OrderBy(d => d.TimeOfDay).ToList();
