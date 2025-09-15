@@ -310,6 +310,6 @@ This roadmap breaks the project into six distinct phases, each with actionable s
 
 ### Step 1: 
 - [x] Photo under animals/edit - Photo is cropped incorrectly. Should span the length from top of 'Animal ID' text box to end of 'Weight' text box
-- [ ] "Schedule for" under 'Upcoming' in /dashboard - text after 'Schedule for' time does not exist...currently says "Scheduled for time not specified"
-- [ ] "Schedule for" under 'Completed' in /dashboard - text after 'Schedule for' time does not exist 
+- [x] "Schedule for" under 'Upcoming' in /dashboard - text after 'Schedule for' time does not exist...currently says "Scheduled for time not specified"
 - [x] "Actions" under 'Medication Schedule' / 'Medication' in animals/edit (for scheduled medication) - Change the blue and red edit/delete icons to "Edit" and "Delete" that's consistent with the other edit/delete functions 
+- [ ] In /dashboard where it says the current date, create two arrows that can cycle to the previous and future dates of medications to distribute. When user selects the left arrow (yesterday) it should say "Yesterday's Medication on the top left where it currently says "Today's Medication" and when the user clicks the right button (tomorrow) it should say "Tomorrow's Medication on the top left. When the user clicks more than one button to the left or right, it should say "|day of week| |Month| |Day's| Medication". So "Saturday September 13's Medication", for example, when user clicks two days to the right from today 

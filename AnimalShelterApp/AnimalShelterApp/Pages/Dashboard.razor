@@ -9,8 +9,16 @@
 @using System.Linq
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3>Today's Medications</h3>
-    <span class="fs-5 text-muted">@DateTime.Today.ToLongDateString()</span>
+    <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-secondary btn-sm" @onclick="PreviousDay" title="Previous day">
+            <i class="bi bi-chevron-left"></i>
+        </button>
+    <h3 class="mb-0">@GetHeaderText()</h3>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="NextDay" title="Next day">
+            <i class="bi bi-chevron-right"></i>
+        </button>
+    </div>
+    <span class="fs-5 text-muted">@selectedDate.ToLongDateString()</span>
 </div>
 
 @if (isLoading)
@@ -112,6 +120,7 @@ else
     
     private bool isLoading = true;
     private string? errorMessage;
+    private DateTime selectedDate = DateTime.Today;
 
     // A special class to hold the combined data for our view
     public class DashboardDoseViewModel
@@ -135,14 +144,21 @@ else
             NavigationManager.NavigateTo("/login");
             return;
         }
+        await LoadDashboardDataAsync();
+    }
+
+    private async Task LoadDashboardDataAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
 
         try
         {
             // Fetch all required data in parallel for speed
-            var scheduledDosesTask = FirestoreService.GetAllScheduledDosesAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
-            var todaysLogsTask = FirestoreService.GetDoseLogsForDateAsync(AuthService.CurrentUser.ShelterId, DateTime.Today, AuthService.Token);
-            var animalsTask = FirestoreService.GetAnimalsAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
-            var medicationsTask = FirestoreService.GetMedicationsAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
+            var scheduledDosesTask = FirestoreService.GetAllScheduledDosesAsync(AuthService.CurrentUser!.ShelterId, AuthService.Token!);
+            var todaysLogsTask = FirestoreService.GetDoseLogsForDateAsync(AuthService.CurrentUser!.ShelterId, selectedDate, AuthService.Token!);
+            var animalsTask = FirestoreService.GetAnimalsAsync(AuthService.CurrentUser!.ShelterId, AuthService.Token!);
+            var medicationsTask = FirestoreService.GetMedicationsAsync(AuthService.CurrentUser!.ShelterId, AuthService.Token!);
 
             await Task.WhenAll(scheduledDosesTask, todaysLogsTask, animalsTask, medicationsTask);
 
@@ -155,10 +171,15 @@ else
             var loggedDoseIds = todaysLogs.Select(l => l.ScheduledDoseId).ToHashSet();
             var currentTime = TimeSpan.Parse(DateTime.Now.ToString("HH:mm"));
 
+            // Reset collections
+            overdueDoses.Clear();
+            upcomingDoses.Clear();
+            completedDoses.Clear();
+
             foreach (var dose in allScheduledDoses)
             {
                 // Check if this dose should be active today based on start/end dates
-                var today = DateTime.Today;
+                var today = selectedDate.Date;
                 
                 // Skip if start date is in the future
                 if (dose.StartDate.Date > today)
@@ -201,12 +222,26 @@ else
                 }
                 else
                 {
-                    if (TimeSpan.TryParse(effectiveTime, out var scheduledTime) && scheduledTime < currentTime)
+                    // Classification depends on whether we're viewing today, a past date, or a future date
+                    if (selectedDate.Date == DateTime.Today)
                     {
+                        if (TimeSpan.TryParse(effectiveTime, out var scheduledTime) && scheduledTime < currentTime)
+                        {
+                            overdueDoses.Add(viewModel);
+                        }
+                        else
+                        {
+                            upcomingDoses.Add(viewModel);
+                        }
+                    }
+                    else if (selectedDate.Date < DateTime.Today)
+                    {
+                        // For past dates, anything not logged is overdue
                         overdueDoses.Add(viewModel);
                     }
                     else
                     {
+                        // For future dates, anything not logged is upcoming
                         upcomingDoses.Add(viewModel);
                     }
                 }
@@ -220,6 +255,39 @@ else
         finally
         {
             isLoading = false;
+        }
+    }
+
+    private async Task PreviousDay()
+    {
+        selectedDate = selectedDate.AddDays(-1);
+        await LoadDashboardDataAsync();
+    }
+
+    private async Task NextDay()
+    {
+        selectedDate = selectedDate.AddDays(1);
+        await LoadDashboardDataAsync();
+    }
+
+    private string GetHeaderText()
+    {
+        if (selectedDate.Date == DateTime.Today)
+        {
+            return "Today's Medication";
+        }
+        else if (selectedDate.Date == DateTime.Today.AddDays(-1))
+        {
+            return "Yesterday's Medication";
+        }
+        else if (selectedDate.Date == DateTime.Today.AddDays(1))
+        {
+            return "Tomorrow's Medication";
+        }
+        else
+        {
+            // Example: Saturday September 13's Medication
+            return $"{selectedDate:dddd MMMM d}'s Medication";
         }
     }
 
