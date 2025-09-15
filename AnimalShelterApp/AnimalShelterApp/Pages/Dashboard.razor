@@ -6,6 +6,7 @@
 @inject NavigationManager NavigationManager
 @inject FirestoreService FirestoreService
 @inject IJSRuntime JSRuntime
+@using System.Linq
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3>Today's Medications</h3>
@@ -171,6 +172,14 @@ else
                     continue;
                 }
 
+                // Determine an effective time for display/classification:
+                // Prefer TimeOfDay; if empty, fall back to the first TimeSlot (if any)
+                var effectiveTime = !string.IsNullOrWhiteSpace(dose.TimeOfDay)
+                    ? dose.TimeOfDay
+                    : (dose.TimeSlots != null && dose.TimeSlots.Any() 
+                        ? dose.TimeSlots.OrderBy(t => t).First()
+                        : string.Empty);
+
                 var viewModel = new DashboardDoseViewModel
                 {
                     ScheduledDoseId = dose.Id,
@@ -179,7 +188,7 @@ else
                     MedicationId = dose.MedicationId,
                     MedicationName = medications.TryGetValue(dose.MedicationId, out var med) ? med.Name : "Unknown Medication",
                     Dosage = dose.Dosage,
-                    TimeOfDay = dose.TimeOfDay,
+                    TimeOfDay = effectiveTime,
                     Notes = dose.Notes
                 };
 
@@ -192,7 +201,7 @@ else
                 }
                 else
                 {
-                    if (TimeSpan.TryParse(dose.TimeOfDay, out var scheduledTime) && scheduledTime < currentTime)
+                    if (TimeSpan.TryParse(effectiveTime, out var scheduledTime) && scheduledTime < currentTime)
                     {
                         overdueDoses.Add(viewModel);
                     }
