@@ -10,15 +10,14 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-outline-secondary btn-sm" @onclick="PreviousDay" title="Previous day">
-            <i class="bi bi-chevron-left"></i>
-        </button>
-    <h3 class="mb-0">@GetHeaderText()</h3>
-        <button class="btn btn-outline-secondary btn-sm" @onclick="NextDay" title="Next day">
-            <i class="bi bi-chevron-right"></i>
-        </button>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="PreviousDay" title="Previous day" aria-label="Previous day">&lt;</button>
+        <h3 class="mb-0">@GetHeaderText()</h3>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="NextDay" title="Next day" aria-label="Next day">&gt;</button>
     </div>
-    <span class="fs-5 text-muted">@selectedDate.ToLongDateString()</span>
+    <div class="d-flex align-items-center gap-2">
+        <span class="fs-5 text-muted">@selectedDate.ToLongDateString()</span>
+        <button class="btn btn-link" @onclick="BackToToday" disabled="@(selectedDate.Date == DateTime.Today)">Back to Today</button>
+    </div>
 </div>
 
 @if (isLoading)
@@ -267,6 +266,12 @@ else
     private async Task NextDay()
     {
         selectedDate = selectedDate.AddDays(1);
+        await LoadDashboardDataAsync();
+    }
+
+    private async Task BackToToday()
+    {
+        selectedDate = DateTime.Today;
         await LoadDashboardDataAsync();
     }
 
