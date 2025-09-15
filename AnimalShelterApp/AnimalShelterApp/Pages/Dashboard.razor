@@ -14,9 +14,16 @@
         <h3 class="mb-0">@GetHeaderText()</h3>
         <button class="btn btn-outline-secondary btn-sm" @onclick="NextDay" title="Next day" aria-label="Next day">&gt;</button>
     </div>
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2 position-relative">
         <span class="fs-5 text-muted">@selectedDate.ToLongDateString()</span>
         <button class="btn btn-link" @onclick="BackToToday" disabled="@(selectedDate.Date == DateTime.Today)">Back to Today</button>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="ToggleDatePicker" aria-label="Open date picker">📅</button>
+        @if (showDatePicker)
+        {
+            <div class="datepicker-popover shadow rounded p-2 bg-white border">
+                <InputDate @bind-Value="pickerDate" class="form-control" @onchange="OnDatePicked" />
+            </div>
+        }
     </div>
 </div>
 
@@ -274,6 +281,27 @@ else
         selectedDate = DateTime.Today;
         await LoadDashboardDataAsync();
     }
+
+    private bool showDatePicker = false;
+    private DateTime pickerDate = DateTime.Today;
+
+    private void ToggleDatePicker()
+    {
+        pickerDate = selectedDate;
+        showDatePicker = !showDatePicker;
+    }
+
+    private async Task OnDatePicked(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var picked))
+        {
+            selectedDate = picked;
+            showDatePicker = false;
+            await LoadDashboardDataAsync();
+        }
+    }
+
+    
 
     private string GetHeaderText()
     {
