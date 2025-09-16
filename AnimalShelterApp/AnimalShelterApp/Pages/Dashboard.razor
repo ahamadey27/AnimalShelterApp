@@ -6,10 +6,83 @@
 @inject NavigationManager NavigationManager
 @inject FirestoreService FirestoreService
 @inject IJSRuntime JSRuntime
+@using System.Linq
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3>Today's Medications</h3>
-    <span class="fs-5 text-muted">@DateTime.Today.ToLongDateString()</span>
+    <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-secondary btn-sm" @onclick="PreviousDay" title="Previous day" aria-label="Previous day">&lt;</button>
+        <h3 class="mb-0">@GetHeaderText()</h3>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="NextDay" title="Next day" aria-label="Next day">&gt;</button>
+    </div>
+    <div class="d-flex align-items-center gap-2 position-relative">
+        <span class="fs-5 text-muted">@selectedDate.ToLongDateString()</span>
+        @if (selectedDate.Date != DateTime.Today)
+        {
+            <button class="btn btn-link" @onclick="BackToToday">Back to Today</button>
+        }
+        <button class="btn btn-outline-secondary btn-sm" @onclick="ToggleDatePicker" aria-label="Open date picker">📅</button>
+        @if (showDatePicker)
+        {
+            <div class="datepicker-popover shadow rounded p-2 bg-white border" style="position: absolute; top: 100%; right: 0; z-index: 1000; min-width: 260px;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="PrevMonth" aria-label="Previous month">&lt;</button>
+                    <div class="d-flex align-items-center gap-2">
+                        <strong>@visibleMonth.ToString("MMMM yyyy")</strong>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="NextMonth" aria-label="Next month">&gt;</button>
+                        <button type="button" class="btn-close" @onclick="() => showDatePicker = false" aria-label="Close"></button>
+                    </div>
+                </div>
+                @{ 
+                    var firstOfMonth = new DateTime(visibleMonth.Year, visibleMonth.Month, 1);
+                    var startOffset = (int)firstOfMonth.DayOfWeek; // Sunday = 0
+                    var daysInMonth = DateTime.DaysInMonth(firstOfMonth.Year, firstOfMonth.Month);
+                }
+                <table class="table table-sm table-borderless mb-0">
+                    <thead>
+                        <tr class="text-center text-muted">
+                            <th class="fw-normal">Su</th>
+                            <th class="fw-normal">Mo</th>
+                            <th class="fw-normal">Tu</th>
+                            <th class="fw-normal">We</th>
+                            <th class="fw-normal">Th</th>
+                            <th class="fw-normal">Fr</th>
+                            <th class="fw-normal">Sa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int week = 0; week < 6; week++)
+                        {
+                            <tr>
+                                @for (int dow = 0; dow < 7; dow++)
+                                {
+                                    var cellIndex = week * 7 + dow;
+                                    var dayNumber = cellIndex - startOffset + 1;
+                                    if (dayNumber < 1 || dayNumber > daysInMonth)
+                                    {
+                                        <td class="text-center align-middle" style="height: 2rem;">
+                                            <span class="text-muted">&nbsp;</span>
+                                        </td>
+                                    }
+                                    else
+                                    {
+                                        var date = new DateTime(firstOfMonth.Year, firstOfMonth.Month, dayNumber);
+                                        var isToday = date.Date == DateTime.Today;
+                                        var isSelected = date.Date == selectedDate.Date;
+                                        var btnClass = isSelected ? "btn btn-primary btn-sm w-100" : (isToday ? "btn btn-outline-primary btn-sm w-100" : "btn btn-light btn-sm w-100");
+                                        <td class="p-1" style="width: 2.5rem; height: 2.5rem;">
+                                            <button class="@btnClass" @onclick="() => SelectDate(date)" title="@date.ToLongDateString()">@dayNumber</button>
+                                        </td>
+                                    }
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
 </div>
 
 @if (isLoading)
@@ -77,10 +150,10 @@ else
         <div>
             <h5 class="mb-1">@dose.MedicationName</h5>
             <p class="mb-1">For: <strong>@dose.AnimalName</strong> (@dose.Dosage)</p>
-            <small class="text-muted">Scheduled for @dose.TimeOfDay</small>
+            <small class="text-muted">Scheduled for @FormatScheduleTime(dose.TimeOfDay)</small>
             @if(dose.TimeAdministered.HasValue)
             {
-                <small class="d-block text-success-emphasis">Given at @dose.TimeAdministered.Value.ToShortTimeString()</small>
+                <small class="d-block text-success-emphasis">Given at @dose.TimeAdministered.Value.ToString("h:mm tt")</small>
             }
         </div>
         <div class="d-flex flex-column align-items-center justify-content-center">
@@ -111,6 +184,7 @@ else
     
     private bool isLoading = true;
     private string? errorMessage;
+    private DateTime selectedDate = DateTime.Today;
 
     // A special class to hold the combined data for our view
     public class DashboardDoseViewModel
@@ -134,14 +208,21 @@ else
             NavigationManager.NavigateTo("/login");
             return;
         }
+        await LoadDashboardDataAsync();
+    }
+
+    private async Task LoadDashboardDataAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
 
         try
         {
             // Fetch all required data in parallel for speed
-            var scheduledDosesTask = FirestoreService.GetAllScheduledDosesAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
-            var todaysLogsTask = FirestoreService.GetDoseLogsForDateAsync(AuthService.CurrentUser.ShelterId, DateTime.Today, AuthService.Token);
-            var animalsTask = FirestoreService.GetAnimalsAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
-            var medicationsTask = FirestoreService.GetMedicationsAsync(AuthService.CurrentUser.ShelterId, AuthService.Token);
+            var scheduledDosesTask = FirestoreService.GetAllScheduledDosesAsync(AuthService.CurrentUser!.ShelterId, AuthService.Token!);
+            var todaysLogsTask = FirestoreService.GetDoseLogsForDateAsync(AuthService.CurrentUser!.ShelterId, selectedDate, AuthService.Token!);
+            var animalsTask = FirestoreService.GetAnimalsAsync(AuthService.CurrentUser!.ShelterId, AuthService.Token!);
+            var medicationsTask = FirestoreService.GetMedicationsAsync(AuthService.CurrentUser!.ShelterId, AuthService.Token!);
 
             await Task.WhenAll(scheduledDosesTask, todaysLogsTask, animalsTask, medicationsTask);
 
@@ -154,10 +235,15 @@ else
             var loggedDoseIds = todaysLogs.Select(l => l.ScheduledDoseId).ToHashSet();
             var currentTime = TimeSpan.Parse(DateTime.Now.ToString("HH:mm"));
 
+            // Reset collections
+            overdueDoses.Clear();
+            upcomingDoses.Clear();
+            completedDoses.Clear();
+
             foreach (var dose in allScheduledDoses)
             {
                 // Check if this dose should be active today based on start/end dates
-                var today = DateTime.Today;
+                var today = selectedDate.Date;
                 
                 // Skip if start date is in the future
                 if (dose.StartDate.Date > today)
@@ -171,6 +257,14 @@ else
                     continue;
                 }
 
+                // Determine an effective time for display/classification:
+                // Prefer TimeOfDay; if empty, fall back to the first TimeSlot (if any)
+                var effectiveTime = !string.IsNullOrWhiteSpace(dose.TimeOfDay)
+                    ? dose.TimeOfDay
+                    : (dose.TimeSlots != null && dose.TimeSlots.Any() 
+                        ? dose.TimeSlots.OrderBy(t => t).First()
+                        : string.Empty);
+
                 var viewModel = new DashboardDoseViewModel
                 {
                     ScheduledDoseId = dose.Id,
@@ -179,7 +273,7 @@ else
                     MedicationId = dose.MedicationId,
                     MedicationName = medications.TryGetValue(dose.MedicationId, out var med) ? med.Name : "Unknown Medication",
                     Dosage = dose.Dosage,
-                    TimeOfDay = dose.TimeOfDay,
+                    TimeOfDay = effectiveTime,
                     Notes = dose.Notes
                 };
 
@@ -192,12 +286,26 @@ else
                 }
                 else
                 {
-                    if (TimeSpan.TryParse(dose.TimeOfDay, out var scheduledTime) && scheduledTime < currentTime)
+                    // Classification depends on whether we're viewing today, a past date, or a future date
+                    if (selectedDate.Date == DateTime.Today)
                     {
+                        if (TimeSpan.TryParse(effectiveTime, out var scheduledTime) && scheduledTime < currentTime)
+                        {
+                            overdueDoses.Add(viewModel);
+                        }
+                        else
+                        {
+                            upcomingDoses.Add(viewModel);
+                        }
+                    }
+                    else if (selectedDate.Date < DateTime.Today)
+                    {
+                        // For past dates, anything not logged is overdue
                         overdueDoses.Add(viewModel);
                     }
                     else
                     {
+                        // For future dates, anything not logged is upcoming
                         upcomingDoses.Add(viewModel);
                     }
                 }
@@ -211,6 +319,73 @@ else
         finally
         {
             isLoading = false;
+        }
+    }
+
+    private async Task PreviousDay()
+    {
+        selectedDate = selectedDate.AddDays(-1);
+        await LoadDashboardDataAsync();
+    }
+
+    private async Task NextDay()
+    {
+        selectedDate = selectedDate.AddDays(1);
+        await LoadDashboardDataAsync();
+    }
+
+    private async Task BackToToday()
+    {
+        selectedDate = DateTime.Today;
+        await LoadDashboardDataAsync();
+    }
+
+    private bool showDatePicker = false;
+    private DateTime visibleMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+    private void ToggleDatePicker()
+    {
+        visibleMonth = new DateTime(selectedDate.Year, selectedDate.Month, 1);
+        showDatePicker = !showDatePicker;
+    }
+
+    private void PrevMonth()
+    {
+        visibleMonth = visibleMonth.AddMonths(-1);
+    }
+
+    private void NextMonth()
+    {
+        visibleMonth = visibleMonth.AddMonths(1);
+    }
+
+    private async Task SelectDate(DateTime date)
+    {
+        selectedDate = date.Date;
+        showDatePicker = false;
+        await LoadDashboardDataAsync();
+    }
+
+    
+
+    private string GetHeaderText()
+    {
+        if (selectedDate.Date == DateTime.Today)
+        {
+            return "Today's Medication";
+        }
+        else if (selectedDate.Date == DateTime.Today.AddDays(-1))
+        {
+            return "Yesterday's Medication";
+        }
+        else if (selectedDate.Date == DateTime.Today.AddDays(1))
+        {
+            return "Tomorrow's Medication";
+        }
+        else
+        {
+            // Example: Saturday September 13's Medication
+            return $"{selectedDate:dddd MMMM d}'s Medication";
         }
     }
 
@@ -231,7 +406,7 @@ else
 
         bool success = await FirestoreService.CreateDoseLogAsync(AuthService.CurrentUser.ShelterId, log, AuthService.Token);
 
-        if (success)
+    if (success)
         {
             // This is the important part: after logging, we re-run the query
             // that needs the composite index. This should trigger the error in the console.
@@ -285,8 +460,22 @@ else
             dose.LogId = "";
             
             // Determine if it should go to overdue or upcoming
+            // Reclassify based on selectedDate context
             var currentTime = TimeSpan.Parse(DateTime.Now.ToString("HH:mm"));
-            if (TimeSpan.TryParse(dose.TimeOfDay, out var scheduledTime) && scheduledTime < currentTime)
+            if (selectedDate.Date == DateTime.Today)
+            {
+                if (TimeSpan.TryParse(dose.TimeOfDay, out var scheduledTime) && scheduledTime < currentTime)
+                {
+                    overdueDoses.Add(dose);
+                    overdueDoses = overdueDoses.OrderBy(d => d.TimeOfDay).ToList();
+                }
+                else
+                {
+                    upcomingDoses.Add(dose);
+                    upcomingDoses = upcomingDoses.OrderBy(d => d.TimeOfDay).ToList();
+                }
+            }
+            else if (selectedDate.Date < DateTime.Today)
             {
                 overdueDoses.Add(dose);
                 overdueDoses = overdueDoses.OrderBy(d => d.TimeOfDay).ToList();
@@ -306,5 +495,22 @@ else
         {
             errorMessage = "Failed to undo medication log. Please try again.";
         }
+    }
+
+    // Helper method to format time display consistently
+    private string FormatScheduleTime(string timeOfDay)
+    {
+        if (string.IsNullOrEmpty(timeOfDay))
+        {
+            return "time not specified";
+        }
+
+        if (TimeSpan.TryParse(timeOfDay, out var timeSpan))
+        {
+            var dateTime = DateTime.Today.Add(timeSpan);
+            return dateTime.ToString("h:mm tt"); // Formats as "8:00 AM" or "2:30 PM"
+        }
+
+        return timeOfDay; // Return original if parsing fails
     }
 }
