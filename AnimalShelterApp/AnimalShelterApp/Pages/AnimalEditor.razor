@@ -501,7 +501,7 @@ else
                                         <label class="form-label">End Date</label>
                                         @if (isEditingDose)
                                         {
-                                            <InputDate @bind-Value="newDose.EndDate" class="form-control" />
+                                            <InputDate @bind-Value="newDose.EndDate" class="form-control" @onchange="OnEndDateChanged" />
                                         }
                                         else
                                         {
@@ -513,7 +513,7 @@ else
                                         <label class="form-label">Duration (Days)</label>
                                         @if (isEditingDose)
                                         {
-                                            <InputNumber @bind-Value="newDose.DurationInDays" class="form-control" min="1" @onkeypress="HandleKeyPress" />
+                                            <InputNumber @bind-Value="newDose.DurationInDays" class="form-control" min="1" @onkeypress="HandleKeyPress" @onchange="OnDurationChanged" />
                                         }
                                         else
                                         {
@@ -1257,6 +1257,55 @@ else
             {
                 newDose.EndDate = newDate.AddDays(newDose.DurationInDays.Value);
             }
+            StateHasChanged();
+        }
+    }
+
+    // Event handlers for editing mode synchronization
+    private void OnEndDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var endDate))
+        {
+            newDose.EndDate = endDate;
+            
+            // Calculate duration if we have a start date
+            if (newDose.StartDate != default)
+            {
+                var duration = (endDate.Date - newDose.StartDate.Date).Days + 1;
+                if (duration > 0)
+                {
+                    newDose.DurationInDays = duration;
+                }
+            }
+            StateHasChanged();
+        }
+        else if (string.IsNullOrEmpty(e.Value?.ToString()))
+        {
+            // Clear end date and duration if input is empty
+            newDose.EndDate = null;
+            newDose.DurationInDays = null;
+            StateHasChanged();
+        }
+    }
+
+    private void OnDurationChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var duration) && duration > 0)
+        {
+            newDose.DurationInDays = duration;
+            
+            // Calculate end date if we have a start date
+            if (newDose.StartDate != default)
+            {
+                newDose.EndDate = newDose.StartDate.AddDays(duration - 1);
+            }
+            StateHasChanged();
+        }
+        else if (string.IsNullOrEmpty(e.Value?.ToString()))
+        {
+            // Clear duration and end date if input is empty
+            newDose.DurationInDays = null;
+            newDose.EndDate = null;
             StateHasChanged();
         }
     }
