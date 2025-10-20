@@ -1,0 +1,21 @@
+# Build artifacts
+bin/
+obj/
+publish/
+
+# IDE files
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Node modules (if any)
+node_modules/
+
+# Local environment files
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.temp
